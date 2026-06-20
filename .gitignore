@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDEs and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Local model/data artifacts
+models/*
+!models/.gitkeep
+cache/*
+!cache/.gitkeep
+outputs/*
+!outputs/.gitkeep
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+
+# Audio and generated media artifacts
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aac
+*.ogg
+*.lrc
+*.srt
+*.vtt
+
+# Temporary manifests and logs
+*.log
+*.tmp
+*.manifest.json
