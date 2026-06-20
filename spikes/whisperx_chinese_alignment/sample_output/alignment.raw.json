@@ -1,0 +1,1188 @@
+{
+  "environment": {
+    "python": "3.11.15 (main, Apr 14 2026, 14:45:51) [Clang 22.1.3 ]",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "ffmpeg": "/opt/homebrew/bin/ffmpeg",
+    "torch": "2.8.0",
+    "torch_cuda_available": false,
+    "torch_mps_available": true,
+    "whisperx": "unknown",
+    "requested_device": "cpu",
+    "compute_type": "int8"
+  },
+  "input": {
+    "audio": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/whisperx_chinese_alignment/sample_input/sample.wav",
+    "lyrics": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/whisperx_chinese_alignment/sample_input/sample_lyrics.txt",
+    "duration_seconds": 8.616,
+    "lyrics_lines": [
+      "星语在夜里发光",
+      "我们听见时间流淌",
+      "星语在夜里发光",
+      "把每个字轻轻照亮"
+    ]
+  },
+  "path_a_asr_then_alignment": {
+    "segments": [
+      {
+        "start": 0.251,
+        "end": 7.878,
+        "text": "新鱼在夜里发光我们听见时间流逃新鱼在夜里发光把每个字轻轻照亮",
+        "words": [
+          {
+            "word": "新",
+            "start": 0.251,
+            "end": 0.491,
+            "score": 0.917
+          },
+          {
+            "word": "鱼",
+            "start": 0.491,
+            "end": 0.772,
+            "score": 0.928
+          },
+          {
+            "word": "在",
+            "start": 0.772,
+            "end": 0.952,
+            "score": 0.999
+          },
+          {
+            "word": "夜",
+            "start": 0.952,
+            "end": 1.112,
+            "score": 0.946
+          },
+          {
+            "word": "里",
+            "start": 1.112,
+            "end": 1.292,
+            "score": 0.992
+          },
+          {
+            "word": "发",
+            "start": 1.292,
+            "end": 1.492,
+            "score": 1.0
+          },
+          {
+            "word": "光",
+            "start": 1.492,
+            "end": 2.333,
+            "score": 0.977
+          },
+          {
+            "word": "我",
+            "start": 2.333,
+            "end": 2.433,
+            "score": 1.0
+          },
+          {
+            "word": "们",
+            "start": 2.433,
+            "end": 2.553,
+            "score": 1.0
+          },
+          {
+            "word": "听",
+            "start": 2.553,
+            "end": 2.733,
+            "score": 1.0
+          },
+          {
+            "word": "见",
+            "start": 2.733,
+            "end": 2.933,
+            "score": 0.962
+          },
+          {
+            "word": "时",
+            "start": 2.933,
+            "end": 3.094,
+            "score": 0.971
+          },
+          {
+            "word": "间",
+            "start": 3.094,
+            "end": 3.274,
+            "score": 0.999
+          },
+          {
+            "word": "流",
+            "start": 3.274,
+            "end": 3.494,
+            "score": 0.99
+          },
+          {
+            "word": "逃",
+            "start": 3.494,
+            "end": 4.475,
+            "score": 0.98
+          },
+          {
+            "word": "新",
+            "start": 4.475,
+            "end": 4.715,
+            "score": 0.917
+          },
+          {
+            "word": "鱼",
+            "start": 4.715,
+            "end": 4.995,
+            "score": 0.928
+          },
+          {
+            "word": "在",
+            "start": 4.995,
+            "end": 5.175,
+            "score": 0.998
+          },
+          {
+            "word": "夜",
+            "start": 5.175,
+            "end": 5.335,
+            "score": 0.875
+          },
+          {
+            "word": "里",
+            "start": 5.335,
+            "end": 5.516,
+            "score": 0.998
+          },
+          {
+            "word": "发",
+            "start": 5.516,
+            "end": 5.696,
+            "score": 1.0
+          },
+          {
+            "word": "光",
+            "start": 5.696,
+            "end": 6.536,
+            "score": 1.0
+          },
+          {
+            "word": "把",
+            "start": 6.536,
+            "end": 6.697,
+            "score": 0.913
+          },
+          {
+            "word": "每",
+            "start": 6.697,
+            "end": 6.897,
+            "score": 0.996
+          },
+          {
+            "word": "个",
+            "start": 6.897,
+            "end": 7.057,
+            "score": 1.0
+          },
+          {
+            "word": "字",
+            "start": 7.057,
+            "end": 7.257,
+            "score": 0.999
+          },
+          {
+            "word": "轻",
+            "start": 7.257,
+            "end": 7.457,
+            "score": 0.919
+          },
+          {
+            "word": "轻",
+            "start": 7.457,
+            "end": 7.637,
+            "score": 0.924
+          },
+          {
+            "word": "照",
+            "start": 7.637,
+            "end": 7.858,
+            "score": 0.998
+          },
+          {
+            "word": "亮",
+            "start": 7.858,
+            "end": 7.878,
+            "score": 0.101
+          }
+        ],
+        "chars": [
+          {
+            "char": "新",
+            "start": 0.251,
+            "end": 0.491,
+            "score": 0.917
+          },
+          {
+            "char": "鱼",
+            "start": 0.491,
+            "end": 0.772,
+            "score": 0.928
+          },
+          {
+            "char": "在",
+            "start": 0.772,
+            "end": 0.952,
+            "score": 0.999
+          },
+          {
+            "char": "夜",
+            "start": 0.952,
+            "end": 1.112,
+            "score": 0.946
+          },
+          {
+            "char": "里",
+            "start": 1.112,
+            "end": 1.292,
+            "score": 0.992
+          },
+          {
+            "char": "发",
+            "start": 1.292,
+            "end": 1.492,
+            "score": 1.0
+          },
+          {
+            "char": "光",
+            "start": 1.492,
+            "end": 2.333,
+            "score": 0.977
+          },
+          {
+            "char": "我",
+            "start": 2.333,
+            "end": 2.433,
+            "score": 1.0
+          },
+          {
+            "char": "们",
+            "start": 2.433,
+            "end": 2.553,
+            "score": 1.0
+          },
+          {
+            "char": "听",
+            "start": 2.553,
+            "end": 2.733,
+            "score": 1.0
+          },
+          {
+            "char": "见",
+            "start": 2.733,
+            "end": 2.933,
+            "score": 0.962
+          },
+          {
+            "char": "时",
+            "start": 2.933,
+            "end": 3.094,
+            "score": 0.971
+          },
+          {
+            "char": "间",
+            "start": 3.094,
+            "end": 3.274,
+            "score": 0.999
+          },
+          {
+            "char": "流",
+            "start": 3.274,
+            "end": 3.494,
+            "score": 0.99
+          },
+          {
+            "char": "逃",
+            "start": 3.494,
+            "end": 4.475,
+            "score": 0.98
+          },
+          {
+            "char": "新",
+            "start": 4.475,
+            "end": 4.715,
+            "score": 0.917
+          },
+          {
+            "char": "鱼",
+            "start": 4.715,
+            "end": 4.995,
+            "score": 0.928
+          },
+          {
+            "char": "在",
+            "start": 4.995,
+            "end": 5.175,
+            "score": 0.998
+          },
+          {
+            "char": "夜",
+            "start": 5.175,
+            "end": 5.335,
+            "score": 0.875
+          },
+          {
+            "char": "里",
+            "start": 5.335,
+            "end": 5.516,
+            "score": 0.998
+          },
+          {
+            "char": "发",
+            "start": 5.516,
+            "end": 5.696,
+            "score": 1.0
+          },
+          {
+            "char": "光",
+            "start": 5.696,
+            "end": 6.536,
+            "score": 1.0
+          },
+          {
+            "char": "把",
+            "start": 6.536,
+            "end": 6.697,
+            "score": 0.913
+          },
+          {
+            "char": "每",
+            "start": 6.697,
+            "end": 6.897,
+            "score": 0.996
+          },
+          {
+            "char": "个",
+            "start": 6.897,
+            "end": 7.057,
+            "score": 1.0
+          },
+          {
+            "char": "字",
+            "start": 7.057,
+            "end": 7.257,
+            "score": 0.999
+          },
+          {
+            "char": "轻",
+            "start": 7.257,
+            "end": 7.457,
+            "score": 0.919
+          },
+          {
+            "char": "轻",
+            "start": 7.457,
+            "end": 7.637,
+            "score": 0.924
+          },
+          {
+            "char": "照",
+            "start": 7.637,
+            "end": 7.858,
+            "score": 0.998
+          },
+          {
+            "char": "亮",
+            "start": 7.858,
+            "end": 7.878,
+            "score": 0.101
+          }
+        ],
+        "avg_logprob": -0.21325969240731663
+      }
+    ],
+    "word_segments": [
+      {
+        "word": "新",
+        "start": 0.251,
+        "end": 0.491,
+        "score": 0.917
+      },
+      {
+        "word": "鱼",
+        "start": 0.491,
+        "end": 0.772,
+        "score": 0.928
+      },
+      {
+        "word": "在",
+        "start": 0.772,
+        "end": 0.952,
+        "score": 0.999
+      },
+      {
+        "word": "夜",
+        "start": 0.952,
+        "end": 1.112,
+        "score": 0.946
+      },
+      {
+        "word": "里",
+        "start": 1.112,
+        "end": 1.292,
+        "score": 0.992
+      },
+      {
+        "word": "发",
+        "start": 1.292,
+        "end": 1.492,
+        "score": 1.0
+      },
+      {
+        "word": "光",
+        "start": 1.492,
+        "end": 2.333,
+        "score": 0.977
+      },
+      {
+        "word": "我",
+        "start": 2.333,
+        "end": 2.433,
+        "score": 1.0
+      },
+      {
+        "word": "们",
+        "start": 2.433,
+        "end": 2.553,
+        "score": 1.0
+      },
+      {
+        "word": "听",
+        "start": 2.553,
+        "end": 2.733,
+        "score": 1.0
+      },
+      {
+        "word": "见",
+        "start": 2.733,
+        "end": 2.933,
+        "score": 0.962
+      },
+      {
+        "word": "时",
+        "start": 2.933,
+        "end": 3.094,
+        "score": 0.971
+      },
+      {
+        "word": "间",
+        "start": 3.094,
+        "end": 3.274,
+        "score": 0.999
+      },
+      {
+        "word": "流",
+        "start": 3.274,
+        "end": 3.494,
+        "score": 0.99
+      },
+      {
+        "word": "逃",
+        "start": 3.494,
+        "end": 4.475,
+        "score": 0.98
+      },
+      {
+        "word": "新",
+        "start": 4.475,
+        "end": 4.715,
+        "score": 0.917
+      },
+      {
+        "word": "鱼",
+        "start": 4.715,
+        "end": 4.995,
+        "score": 0.928
+      },
+      {
+        "word": "在",
+        "start": 4.995,
+        "end": 5.175,
+        "score": 0.998
+      },
+      {
+        "word": "夜",
+        "start": 5.175,
+        "end": 5.335,
+        "score": 0.875
+      },
+      {
+        "word": "里",
+        "start": 5.335,
+        "end": 5.516,
+        "score": 0.998
+      },
+      {
+        "word": "发",
+        "start": 5.516,
+        "end": 5.696,
+        "score": 1.0
+      },
+      {
+        "word": "光",
+        "start": 5.696,
+        "end": 6.536,
+        "score": 1.0
+      },
+      {
+        "word": "把",
+        "start": 6.536,
+        "end": 6.697,
+        "score": 0.913
+      },
+      {
+        "word": "每",
+        "start": 6.697,
+        "end": 6.897,
+        "score": 0.996
+      },
+      {
+        "word": "个",
+        "start": 6.897,
+        "end": 7.057,
+        "score": 1.0
+      },
+      {
+        "word": "字",
+        "start": 7.057,
+        "end": 7.257,
+        "score": 0.999
+      },
+      {
+        "word": "轻",
+        "start": 7.257,
+        "end": 7.457,
+        "score": 0.919
+      },
+      {
+        "word": "轻",
+        "start": 7.457,
+        "end": 7.637,
+        "score": 0.924
+      },
+      {
+        "word": "照",
+        "start": 7.637,
+        "end": 7.858,
+        "score": 0.998
+      },
+      {
+        "word": "亮",
+        "start": 7.858,
+        "end": 7.878,
+        "score": 0.101
+      }
+    ]
+  },
+  "path_b_trusted_lyrics_segments": {
+    "input_segments": [
+      {
+        "start": 0.0,
+        "end": 2.01,
+        "text": "星语在夜里发光"
+      },
+      {
+        "start": 2.01,
+        "end": 4.308,
+        "text": "我们听见时间流淌"
+      },
+      {
+        "start": 4.308,
+        "end": 6.318,
+        "text": "星语在夜里发光"
+      },
+      {
+        "start": 6.318,
+        "end": 8.616,
+        "text": "把每个字轻轻照亮"
+      }
+    ],
+    "alignment": {
+      "segments": [
+        {
+          "start": 0.261,
+          "end": 1.507,
+          "text": "星语在夜里发光",
+          "words": [
+            {
+              "word": "星",
+              "start": 0.261,
+              "end": 0.502,
+              "score": 0.956
+            },
+            {
+              "word": "语",
+              "start": 0.502,
+              "end": 0.784,
+              "score": 0.968
+            },
+            {
+              "word": "在",
+              "start": 0.784,
+              "end": 0.965,
+              "score": 1.0
+            },
+            {
+              "word": "夜",
+              "start": 0.965,
+              "end": 1.126,
+              "score": 0.905
+            },
+            {
+              "word": "里",
+              "start": 1.126,
+              "end": 1.306,
+              "score": 0.96
+            },
+            {
+              "word": "发",
+              "start": 1.306,
+              "end": 1.487,
+              "score": 1.0
+            },
+            {
+              "word": "光",
+              "start": 1.487,
+              "end": 1.507,
+              "score": 0.988
+            }
+          ],
+          "chars": [
+            {
+              "char": "星",
+              "start": 0.261,
+              "end": 0.502,
+              "score": 0.956
+            },
+            {
+              "char": "语",
+              "start": 0.502,
+              "end": 0.784,
+              "score": 0.968
+            },
+            {
+              "char": "在",
+              "start": 0.784,
+              "end": 0.965,
+              "score": 1.0
+            },
+            {
+              "char": "夜",
+              "start": 0.965,
+              "end": 1.126,
+              "score": 0.905
+            },
+            {
+              "char": "里",
+              "start": 1.126,
+              "end": 1.306,
+              "score": 0.96
+            },
+            {
+              "char": "发",
+              "start": 1.306,
+              "end": 1.487,
+              "score": 1.0
+            },
+            {
+              "char": "光",
+              "start": 1.487,
+              "end": 1.507,
+              "score": 0.988
+            }
+          ]
+        },
+        {
+          "start": 2.333,
+          "end": 3.522,
+          "text": "我们听见时间流淌",
+          "words": [
+            {
+              "word": "我",
+              "start": 2.333,
+              "end": 2.433,
+              "score": 1.0
+            },
+            {
+              "word": "们",
+              "start": 2.433,
+              "end": 2.554,
+              "score": 1.0
+            },
+            {
+              "word": "听",
+              "start": 2.554,
+              "end": 2.736,
+              "score": 1.0
+            },
+            {
+              "word": "见",
+              "start": 2.736,
+              "end": 2.937,
+              "score": 0.975
+            },
+            {
+              "word": "时",
+              "start": 2.937,
+              "end": 3.099,
+              "score": 1.0
+            },
+            {
+              "word": "间",
+              "start": 3.099,
+              "end": 3.28,
+              "score": 0.999
+            },
+            {
+              "word": "流",
+              "start": 3.28,
+              "end": 3.502,
+              "score": 0.994
+            },
+            {
+              "word": "淌",
+              "start": 3.502,
+              "end": 3.522,
+              "score": 0.747
+            }
+          ],
+          "chars": [
+            {
+              "char": "我",
+              "start": 2.333,
+              "end": 2.433,
+              "score": 1.0
+            },
+            {
+              "char": "们",
+              "start": 2.433,
+              "end": 2.554,
+              "score": 1.0
+            },
+            {
+              "char": "听",
+              "start": 2.554,
+              "end": 2.736,
+              "score": 1.0
+            },
+            {
+              "char": "见",
+              "start": 2.736,
+              "end": 2.937,
+              "score": 0.975
+            },
+            {
+              "char": "时",
+              "start": 2.937,
+              "end": 3.099,
+              "score": 1.0
+            },
+            {
+              "char": "间",
+              "start": 3.099,
+              "end": 3.28,
+              "score": 0.999
+            },
+            {
+              "char": "流",
+              "start": 3.28,
+              "end": 3.502,
+              "score": 0.994
+            },
+            {
+              "char": "淌",
+              "start": 3.502,
+              "end": 3.522,
+              "score": 0.747
+            }
+          ]
+        },
+        {
+          "start": 4.469,
+          "end": 5.715,
+          "text": "星语在夜里发光",
+          "words": [
+            {
+              "word": "星",
+              "start": 4.469,
+              "end": 4.71,
+              "score": 0.957
+            },
+            {
+              "word": "语",
+              "start": 4.71,
+              "end": 4.991,
+              "score": 0.972
+            },
+            {
+              "word": "在",
+              "start": 4.991,
+              "end": 5.172,
+              "score": 1.0
+            },
+            {
+              "word": "夜",
+              "start": 5.172,
+              "end": 5.333,
+              "score": 0.91
+            },
+            {
+              "word": "里",
+              "start": 5.333,
+              "end": 5.514,
+              "score": 0.978
+            },
+            {
+              "word": "发",
+              "start": 5.514,
+              "end": 5.695,
+              "score": 1.0
+            },
+            {
+              "word": "光",
+              "start": 5.695,
+              "end": 5.715,
+              "score": 0.983
+            }
+          ],
+          "chars": [
+            {
+              "char": "星",
+              "start": 4.469,
+              "end": 4.71,
+              "score": 0.957
+            },
+            {
+              "char": "语",
+              "start": 4.71,
+              "end": 4.991,
+              "score": 0.972
+            },
+            {
+              "char": "在",
+              "start": 4.991,
+              "end": 5.172,
+              "score": 1.0
+            },
+            {
+              "char": "夜",
+              "start": 5.172,
+              "end": 5.333,
+              "score": 0.91
+            },
+            {
+              "char": "里",
+              "start": 5.333,
+              "end": 5.514,
+              "score": 0.978
+            },
+            {
+              "char": "发",
+              "start": 5.514,
+              "end": 5.695,
+              "score": 1.0
+            },
+            {
+              "char": "光",
+              "start": 5.695,
+              "end": 5.715,
+              "score": 0.983
+            }
+          ]
+        },
+        {
+          "start": 6.54,
+          "end": 7.87,
+          "text": "把每个字轻轻照亮",
+          "words": [
+            {
+              "word": "把",
+              "start": 6.54,
+              "end": 6.701,
+              "score": 0.998
+            },
+            {
+              "word": "每",
+              "start": 6.701,
+              "end": 6.903,
+              "score": 1.0
+            },
+            {
+              "word": "个",
+              "start": 6.903,
+              "end": 7.064,
+              "score": 1.0
+            },
+            {
+              "word": "字",
+              "start": 7.064,
+              "end": 7.265,
+              "score": 0.995
+            },
+            {
+              "word": "轻",
+              "start": 7.265,
+              "end": 7.447,
+              "score": 0.927
+            },
+            {
+              "word": "轻",
+              "start": 7.447,
+              "end": 7.648,
+              "score": 0.943
+            },
+            {
+              "word": "照",
+              "start": 7.648,
+              "end": 7.85,
+              "score": 0.999
+            },
+            {
+              "word": "亮",
+              "start": 7.85,
+              "end": 7.87,
+              "score": 0.484
+            }
+          ],
+          "chars": [
+            {
+              "char": "把",
+              "start": 6.54,
+              "end": 6.701,
+              "score": 0.998
+            },
+            {
+              "char": "每",
+              "start": 6.701,
+              "end": 6.903,
+              "score": 1.0
+            },
+            {
+              "char": "个",
+              "start": 6.903,
+              "end": 7.064,
+              "score": 1.0
+            },
+            {
+              "char": "字",
+              "start": 7.064,
+              "end": 7.265,
+              "score": 0.995
+            },
+            {
+              "char": "轻",
+              "start": 7.265,
+              "end": 7.447,
+              "score": 0.927
+            },
+            {
+              "char": "轻",
+              "start": 7.447,
+              "end": 7.648,
+              "score": 0.943
+            },
+            {
+              "char": "照",
+              "start": 7.648,
+              "end": 7.85,
+              "score": 0.999
+            },
+            {
+              "char": "亮",
+              "start": 7.85,
+              "end": 7.87,
+              "score": 0.484
+            }
+          ]
+        }
+      ],
+      "word_segments": [
+        {
+          "word": "星",
+          "start": 0.261,
+          "end": 0.502,
+          "score": 0.956
+        },
+        {
+          "word": "语",
+          "start": 0.502,
+          "end": 0.784,
+          "score": 0.968
+        },
+        {
+          "word": "在",
+          "start": 0.784,
+          "end": 0.965,
+          "score": 1.0
+        },
+        {
+          "word": "夜",
+          "start": 0.965,
+          "end": 1.126,
+          "score": 0.905
+        },
+        {
+          "word": "里",
+          "start": 1.126,
+          "end": 1.306,
+          "score": 0.96
+        },
+        {
+          "word": "发",
+          "start": 1.306,
+          "end": 1.487,
+          "score": 1.0
+        },
+        {
+          "word": "光",
+          "start": 1.487,
+          "end": 1.507,
+          "score": 0.988
+        },
+        {
+          "word": "我",
+          "start": 2.333,
+          "end": 2.433,
+          "score": 1.0
+        },
+        {
+          "word": "们",
+          "start": 2.433,
+          "end": 2.554,
+          "score": 1.0
+        },
+        {
+          "word": "听",
+          "start": 2.554,
+          "end": 2.736,
+          "score": 1.0
+        },
+        {
+          "word": "见",
+          "start": 2.736,
+          "end": 2.937,
+          "score": 0.975
+        },
+        {
+          "word": "时",
+          "start": 2.937,
+          "end": 3.099,
+          "score": 1.0
+        },
+        {
+          "word": "间",
+          "start": 3.099,
+          "end": 3.28,
+          "score": 0.999
+        },
+        {
+          "word": "流",
+          "start": 3.28,
+          "end": 3.502,
+          "score": 0.994
+        },
+        {
+          "word": "淌",
+          "start": 3.502,
+          "end": 3.522,
+          "score": 0.747
+        },
+        {
+          "word": "星",
+          "start": 4.469,
+          "end": 4.71,
+          "score": 0.957
+        },
+        {
+          "word": "语",
+          "start": 4.71,
+          "end": 4.991,
+          "score": 0.972
+        },
+        {
+          "word": "在",
+          "start": 4.991,
+          "end": 5.172,
+          "score": 1.0
+        },
+        {
+          "word": "夜",
+          "start": 5.172,
+          "end": 5.333,
+          "score": 0.91
+        },
+        {
+          "word": "里",
+          "start": 5.333,
+          "end": 5.514,
+          "score": 0.978
+        },
+        {
+          "word": "发",
+          "start": 5.514,
+          "end": 5.695,
+          "score": 1.0
+        },
+        {
+          "word": "光",
+          "start": 5.695,
+          "end": 5.715,
+          "score": 0.983
+        },
+        {
+          "word": "把",
+          "start": 6.54,
+          "end": 6.701,
+          "score": 0.998
+        },
+        {
+          "word": "每",
+          "start": 6.701,
+          "end": 6.903,
+          "score": 1.0
+        },
+        {
+          "word": "个",
+          "start": 6.903,
+          "end": 7.064,
+          "score": 1.0
+        },
+        {
+          "word": "字",
+          "start": 7.064,
+          "end": 7.265,
+          "score": 0.995
+        },
+        {
+          "word": "轻",
+          "start": 7.265,
+          "end": 7.447,
+          "score": 0.927
+        },
+        {
+          "word": "轻",
+          "start": 7.447,
+          "end": 7.648,
+          "score": 0.943
+        },
+        {
+          "word": "照",
+          "start": 7.648,
+          "end": 7.85,
+          "score": 0.999
+        },
+        {
+          "word": "亮",
+          "start": 7.85,
+          "end": 7.87,
+          "score": 0.484
+        }
+      ]
+    }
+  },
+  "elapsed_seconds": 5.785
+}

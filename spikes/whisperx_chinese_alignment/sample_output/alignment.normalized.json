@@ -1,0 +1,228 @@
+{
+  "source": {
+    "audio": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/whisperx_chinese_alignment/sample_input/sample.wav",
+    "language": "zh",
+    "alignment_engine": "whisperx"
+  },
+  "lines": [
+    {
+      "index": 0,
+      "text": "星语在夜里发光",
+      "start": 0.261,
+      "end": 1.507,
+      "status": "aligned",
+      "tokens": [
+        {
+          "text": "星",
+          "start": 0.261,
+          "end": 0.502,
+          "confidence": 0.956
+        },
+        {
+          "text": "语",
+          "start": 0.502,
+          "end": 0.784,
+          "confidence": 0.968
+        },
+        {
+          "text": "在",
+          "start": 0.784,
+          "end": 0.965,
+          "confidence": 1.0
+        },
+        {
+          "text": "夜",
+          "start": 0.965,
+          "end": 1.126,
+          "confidence": 0.905
+        },
+        {
+          "text": "里",
+          "start": 1.126,
+          "end": 1.306,
+          "confidence": 0.96
+        },
+        {
+          "text": "发",
+          "start": 1.306,
+          "end": 1.487,
+          "confidence": 1.0
+        },
+        {
+          "text": "光",
+          "start": 1.487,
+          "end": 1.507,
+          "confidence": 0.988
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "text": "我们听见时间流淌",
+      "start": 2.333,
+      "end": 3.522,
+      "status": "aligned",
+      "tokens": [
+        {
+          "text": "我",
+          "start": 2.333,
+          "end": 2.433,
+          "confidence": 1.0
+        },
+        {
+          "text": "们",
+          "start": 2.433,
+          "end": 2.554,
+          "confidence": 1.0
+        },
+        {
+          "text": "听",
+          "start": 2.554,
+          "end": 2.736,
+          "confidence": 1.0
+        },
+        {
+          "text": "见",
+          "start": 2.736,
+          "end": 2.937,
+          "confidence": 0.975
+        },
+        {
+          "text": "时",
+          "start": 2.937,
+          "end": 3.099,
+          "confidence": 1.0
+        },
+        {
+          "text": "间",
+          "start": 3.099,
+          "end": 3.28,
+          "confidence": 0.999
+        },
+        {
+          "text": "流",
+          "start": 3.28,
+          "end": 3.502,
+          "confidence": 0.994
+        },
+        {
+          "text": "淌",
+          "start": 3.502,
+          "end": 3.522,
+          "confidence": 0.747
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "text": "星语在夜里发光",
+      "start": 4.469,
+      "end": 5.715,
+      "status": "aligned",
+      "tokens": [
+        {
+          "text": "星",
+          "start": 4.469,
+          "end": 4.71,
+          "confidence": 0.957
+        },
+        {
+          "text": "语",
+          "start": 4.71,
+          "end": 4.991,
+          "confidence": 0.972
+        },
+        {
+          "text": "在",
+          "start": 4.991,
+          "end": 5.172,
+          "confidence": 1.0
+        },
+        {
+          "text": "夜",
+          "start": 5.172,
+          "end": 5.333,
+          "confidence": 0.91
+        },
+        {
+          "text": "里",
+          "start": 5.333,
+          "end": 5.514,
+          "confidence": 0.978
+        },
+        {
+          "text": "发",
+          "start": 5.514,
+          "end": 5.695,
+          "confidence": 1.0
+        },
+        {
+          "text": "光",
+          "start": 5.695,
+          "end": 5.715,
+          "confidence": 0.983
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "text": "把每个字轻轻照亮",
+      "start": 6.54,
+      "end": 7.87,
+      "status": "aligned",
+      "tokens": [
+        {
+          "text": "把",
+          "start": 6.54,
+          "end": 6.701,
+          "confidence": 0.998
+        },
+        {
+          "text": "每",
+          "start": 6.701,
+          "end": 6.903,
+          "confidence": 1.0
+        },
+        {
+          "text": "个",
+          "start": 6.903,
+          "end": 7.064,
+          "confidence": 1.0
+        },
+        {
+          "text": "字",
+          "start": 7.064,
+          "end": 7.265,
+          "confidence": 0.995
+        },
+        {
+          "text": "轻",
+          "start": 7.265,
+          "end": 7.447,
+          "confidence": 0.927
+        },
+        {
+          "text": "轻",
+          "start": 7.447,
+          "end": 7.648,
+          "confidence": 0.943
+        },
+        {
+          "text": "照",
+          "start": 7.648,
+          "end": 7.85,
+          "confidence": 0.999
+        },
+        {
+          "text": "亮",
+          "start": 7.85,
+          "end": 7.87,
+          "confidence": 0.484
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "ASR did not produce enough segments; trusted-lyrics path fell back to proportional windows."
+  ]
+}
