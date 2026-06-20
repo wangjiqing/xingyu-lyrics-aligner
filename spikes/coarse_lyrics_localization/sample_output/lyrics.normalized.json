@@ -1,0 +1,53 @@
+{
+  "lines": [
+    {
+      "index": 0,
+      "text": "星语在夜里发光",
+      "normalized_text": "星语在夜里发光",
+      "match_key": "星语在夜里发光"
+    },
+    {
+      "index": 1,
+      "text": "我们听见时间流淌",
+      "normalized_text": "我们听见时间流淌",
+      "match_key": "我们听见时间流淌"
+    },
+    {
+      "index": 2,
+      "text": "星语在夜里发光",
+      "normalized_text": "星语在夜里发光",
+      "match_key": "星语在夜里发光"
+    },
+    {
+      "index": 3,
+      "text": "把每个字轻轻照亮",
+      "normalized_text": "把每个字轻轻照亮",
+      "match_key": "把每个字轻轻照亮"
+    },
+    {
+      "index": 4,
+      "text": "明天还会继续唱",
+      "normalized_text": "明天还会继续唱",
+      "match_key": "明天还会继续唱"
+    },
+    {
+      "index": 5,
+      "text": "这一句没有唱出声",
+      "normalized_text": "这一句没有唱出声",
+      "match_key": "这一句没有唱出声"
+    },
+    {
+      "index": 6,
+      "text": "星语在夜里发光",
+      "normalized_text": "星语在夜里发光",
+      "match_key": "星语在夜里发光"
+    }
+  ],
+  "normalization_rules": [
+    "Unicode NFKC full-width/half-width normalization",
+    "lowercase Latin letters",
+    "drop Unicode punctuation, symbols, and whitespace",
+    "map Arabic digits 0-9 to Chinese digits for comparison",
+    "fold a small hand-written ASR confusion table only for matching keys"
+  ]
+}

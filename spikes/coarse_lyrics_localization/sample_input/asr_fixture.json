@@ -1,0 +1,56 @@
+{
+  "engine": "whisperx-fixture",
+  "language": "zh",
+  "audio": "sample.wav",
+  "duration": 31.0,
+  "segments": [
+    {
+      "id": 0,
+      "start": 5.02,
+      "end": 7.05,
+      "text": "新鱼在夜里发光"
+    },
+    {
+      "id": 1,
+      "start": 7.18,
+      "end": 9.18,
+      "text": "我们听见时间流逃"
+    },
+    {
+      "id": 2,
+      "start": 13.7,
+      "end": 14.2,
+      "text": "啦"
+    },
+    {
+      "id": 3,
+      "start": 15.18,
+      "end": 17.16,
+      "text": "新鱼在夜里发光"
+    },
+    {
+      "id": 4,
+      "start": 17.28,
+      "end": 18.46,
+      "text": "把每个字"
+    },
+    {
+      "id": 5,
+      "start": 18.5,
+      "end": 20.04,
+      "text": "轻轻照亮"
+    },
+    {
+      "id": 6,
+      "start": 21.08,
+      "end": 22.62,
+      "text": "明天继续唱"
+    },
+    {
+      "id": 7,
+      "start": 25.88,
+      "end": 27.92,
+      "text": "新鱼在夜里发光"
+    }
+  ]
+}

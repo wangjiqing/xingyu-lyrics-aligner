@@ -1,0 +1,457 @@
+{
+  "config": {
+    "audio": "sample_input/sample.wav",
+    "lyrics": "sample_input/sample_lyrics.txt",
+    "asr_json": "sample_input/asr_fixture.json",
+    "output_dir": "sample_output",
+    "language": "zh",
+    "device": "cpu",
+    "compute_type": "int8",
+    "asr_model": "tiny",
+    "run_whisperx": false,
+    "model_cache_only": false,
+    "pre_roll": 0.75,
+    "post_roll": 0.9,
+    "low_confidence_extra": 0.55,
+    "min_window": 1.5,
+    "max_span": 2,
+    "match_threshold": 0.82,
+    "low_threshold": 0.48
+  },
+  "asr_segments_normalized": [
+    {
+      "index": 0,
+      "text": "新鱼在夜里发光",
+      "start": 5.02,
+      "end": 7.05,
+      "normalized_text": "新鱼在夜里发光",
+      "match_key": "星语在夜里发光"
+    },
+    {
+      "index": 1,
+      "text": "我们听见时间流逃",
+      "start": 7.18,
+      "end": 9.18,
+      "normalized_text": "我们听见时间流逃",
+      "match_key": "我们听见时间流淌"
+    },
+    {
+      "index": 2,
+      "text": "啦",
+      "start": 13.7,
+      "end": 14.2,
+      "normalized_text": "啦",
+      "match_key": "啦"
+    },
+    {
+      "index": 3,
+      "text": "新鱼在夜里发光",
+      "start": 15.18,
+      "end": 17.16,
+      "normalized_text": "新鱼在夜里发光",
+      "match_key": "星语在夜里发光"
+    },
+    {
+      "index": 4,
+      "text": "把每个字",
+      "start": 17.28,
+      "end": 18.46,
+      "normalized_text": "把每个字",
+      "match_key": "把每个字"
+    },
+    {
+      "index": 5,
+      "text": "轻轻照亮",
+      "start": 18.5,
+      "end": 20.04,
+      "normalized_text": "轻轻照亮",
+      "match_key": "轻轻照亮"
+    },
+    {
+      "index": 6,
+      "text": "明天继续唱",
+      "start": 21.08,
+      "end": 22.62,
+      "normalized_text": "明天继续唱",
+      "match_key": "明天继续唱"
+    },
+    {
+      "index": 7,
+      "text": "新鱼在夜里发光",
+      "start": 25.88,
+      "end": 27.92,
+      "normalized_text": "新鱼在夜里发光",
+      "match_key": "星语在夜里发光"
+    }
+  ],
+  "greedy": {
+    "source": {
+      "audio": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/coarse_lyrics_localization/sample_input/sample.wav",
+      "lyrics": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/coarse_lyrics_localization/sample_input/sample_lyrics.txt",
+      "language": "zh",
+      "asr_engine": "whisperx-fixture"
+    },
+    "strategy": "greedy",
+    "status_vocabulary": [
+      "matched",
+      "low_confidence",
+      "unmatched",
+      "ambiguous_repeat",
+      "manual_review_required"
+    ],
+    "lines": [
+      {
+        "index": 0,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 4.27,
+        "window_end": 7.115,
+        "anchor_start": 5.02,
+        "anchor_end": 7.05,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 5.02,
+            "end": 7.05
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 1,
+        "text": "我们听见时间流淌",
+        "normalized_text": "我们听见时间流淌",
+        "match_key": "我们听见时间流淌",
+        "window_start": 7.115,
+        "window_end": 10.08,
+        "anchor_start": 7.18,
+        "anchor_end": 9.18,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "我们听见时间流逃",
+            "start": 7.18,
+            "end": 9.18
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 2,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 14.43,
+        "window_end": 17.22,
+        "anchor_start": 15.18,
+        "anchor_end": 17.16,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 15.18,
+            "end": 17.16
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "trusted_lyrics_line_repeats",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 3,
+        "text": "把每个字轻轻照亮",
+        "normalized_text": "把每个字轻轻照亮",
+        "match_key": "把每个字轻轻照亮",
+        "window_start": 17.22,
+        "window_end": 20.56,
+        "anchor_start": 17.28,
+        "anchor_end": 20.04,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "把每个字",
+            "start": 17.28,
+            "end": 18.46
+          },
+          {
+            "text": "轻轻照亮",
+            "start": 18.5,
+            "end": 20.04
+          }
+        ],
+        "warnings": [
+          "matched_across_multiple_asr_segments",
+          "window_overlap_trimmed",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 4,
+        "text": "明天还会继续唱",
+        "normalized_text": "明天还会继续唱",
+        "match_key": "明天还会继续唱",
+        "window_start": 20.56,
+        "window_end": 24.07,
+        "anchor_start": 21.08,
+        "anchor_end": 22.62,
+        "match_score": 0.7798,
+        "status": "low_confidence",
+        "asr_evidence": [
+          {
+            "text": "明天继续唱",
+            "start": 21.08,
+            "end": 22.62
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "window_overlap_trimmed",
+          "manual_review_recommended"
+        ]
+      },
+      {
+        "index": 5,
+        "text": "这一句没有唱出声",
+        "normalized_text": "这一句没有唱出声",
+        "match_key": "这一句没有唱出声",
+        "window_start": null,
+        "window_end": null,
+        "anchor_start": null,
+        "anchor_end": null,
+        "match_score": 0.0,
+        "status": "unmatched",
+        "asr_evidence": [],
+        "warnings": [
+          "no_asr_anchor_found"
+        ]
+      },
+      {
+        "index": 6,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 25.13,
+        "window_end": 28.82,
+        "anchor_start": 25.88,
+        "anchor_end": 27.92,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 25.88,
+            "end": 27.92
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "trusted_lyrics_line_repeats"
+        ]
+      }
+    ],
+    "warnings": [
+      "some_lines_require_review_or_are_unmatched",
+      "trusted_lyrics_contains_repeated_lines"
+    ]
+  },
+  "dynamic_programming": {
+    "source": {
+      "audio": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/coarse_lyrics_localization/sample_input/sample.wav",
+      "lyrics": "/Users/wangjiqing/Project/xingyu-lyrics-aligner/spikes/coarse_lyrics_localization/sample_input/sample_lyrics.txt",
+      "language": "zh",
+      "asr_engine": "whisperx-fixture"
+    },
+    "strategy": "dynamic_programming",
+    "status_vocabulary": [
+      "matched",
+      "low_confidence",
+      "unmatched",
+      "ambiguous_repeat",
+      "manual_review_required"
+    ],
+    "lines": [
+      {
+        "index": 0,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 4.27,
+        "window_end": 7.115,
+        "anchor_start": 5.02,
+        "anchor_end": 7.05,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 5.02,
+            "end": 7.05
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "repeat_occurrence_1_of_3",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 1,
+        "text": "我们听见时间流淌",
+        "normalized_text": "我们听见时间流淌",
+        "match_key": "我们听见时间流淌",
+        "window_start": 7.115,
+        "window_end": 10.08,
+        "anchor_start": 7.18,
+        "anchor_end": 9.18,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "我们听见时间流逃",
+            "start": 7.18,
+            "end": 9.18
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 2,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 14.43,
+        "window_end": 17.22,
+        "anchor_start": 15.18,
+        "anchor_end": 17.16,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 15.18,
+            "end": 17.16
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "repeat_occurrence_2_of_3",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 3,
+        "text": "把每个字轻轻照亮",
+        "normalized_text": "把每个字轻轻照亮",
+        "match_key": "把每个字轻轻照亮",
+        "window_start": 17.22,
+        "window_end": 20.56,
+        "anchor_start": 17.28,
+        "anchor_end": 20.04,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "把每个字",
+            "start": 17.28,
+            "end": 18.46
+          },
+          {
+            "text": "轻轻照亮",
+            "start": 18.5,
+            "end": 20.04
+          }
+        ],
+        "warnings": [
+          "matched_across_multiple_asr_segments",
+          "window_overlap_trimmed",
+          "window_overlap_trimmed"
+        ]
+      },
+      {
+        "index": 4,
+        "text": "明天还会继续唱",
+        "normalized_text": "明天还会继续唱",
+        "match_key": "明天还会继续唱",
+        "window_start": 20.56,
+        "window_end": 24.07,
+        "anchor_start": 21.08,
+        "anchor_end": 22.62,
+        "match_score": 0.7798,
+        "status": "low_confidence",
+        "asr_evidence": [
+          {
+            "text": "明天继续唱",
+            "start": 21.08,
+            "end": 22.62
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "window_overlap_trimmed",
+          "manual_review_recommended"
+        ]
+      },
+      {
+        "index": 5,
+        "text": "这一句没有唱出声",
+        "normalized_text": "这一句没有唱出声",
+        "match_key": "这一句没有唱出声",
+        "window_start": null,
+        "window_end": null,
+        "anchor_start": null,
+        "anchor_end": null,
+        "match_score": 0.0,
+        "status": "unmatched",
+        "asr_evidence": [],
+        "warnings": [
+          "no_asr_anchor_found"
+        ]
+      },
+      {
+        "index": 6,
+        "text": "星语在夜里发光",
+        "normalized_text": "星语在夜里发光",
+        "match_key": "星语在夜里发光",
+        "window_start": 25.13,
+        "window_end": 28.82,
+        "anchor_start": 25.88,
+        "anchor_end": 27.92,
+        "match_score": 1.0,
+        "status": "matched",
+        "asr_evidence": [
+          {
+            "text": "新鱼在夜里发光",
+            "start": 25.88,
+            "end": 27.92
+          }
+        ],
+        "warnings": [
+          "asr_text_differs_from_trusted_lyrics",
+          "repeat_occurrence_3_of_3"
+        ]
+      }
+    ],
+    "warnings": [
+      "some_lines_require_review_or_are_unmatched",
+      "trusted_lyrics_contains_repeated_lines"
+    ]
+  },
+  "elapsed_seconds": 0.4602
+}

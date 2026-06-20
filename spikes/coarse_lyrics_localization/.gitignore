@@ -1,0 +1,7 @@
+.venv/
+sample_input/*.wav
+sample_input/*.mp3
+sample_input/*.aiff
+sample_input/*.caf
+sample_output/*.log
+sample_output/*.err
