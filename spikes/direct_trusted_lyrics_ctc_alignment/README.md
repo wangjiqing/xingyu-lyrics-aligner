@@ -47,29 +47,29 @@ If the previous spike virtual environment exists, it can also be reused for loca
 
 ## Run
 
-Original version:
+Single global segment:
 
 ```bash
 python run_spike.py \
-  --audio "/Users/wangjiqing/Documents/Music/郑源 - 曾经爱过你.flac" \
-  --lyrics "/Users/wangjiqing/Documents/Music/郑源 - 曾经爱过你.txt" \
-  --output-dir local_output/zhengyuan \
-  --device cpu \
-  --language zh \
-  --model-cache-only \
-  --foreground-voice-switch-lines 1-4
-```
-
-K-song version:
-
-```bash
-python run_spike.py \
-  --audio "/Users/wangjiqing/Documents/Music/星语 - 曾经爱过你.flac" \
-  --lyrics "/Users/wangjiqing/Documents/Music/星语 - 曾经爱过你.txt" \
-  --output-dir local_output/xingyu \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir local_output/song_global \
   --device cpu \
   --language zh \
   --model-cache-only
+```
+
+With foreground voice switch review markers:
+
+```bash
+python run_spike.py \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir local_output/song_review \
+  --device cpu \
+  --language zh \
+  --model-cache-only \
+  --foreground-voice-switch-lines 3,5-7
 ```
 
 Adjust `--foreground-voice-switch-lines` after inspecting the local lyrics file. The argument is 1-based and accepts comma-separated numbers/ranges, for example `3,5-7`.

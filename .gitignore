@@ -48,11 +48,10 @@ outputs/*
 # Temporary manifests and logs
 *.log
 *.tmp
-*.manifest.json
+/spikes/**/*.manifest.json
 
 # Local-only research and discarded experiments
 /spikes/end_to_end_alignment/
-/docs/research/nightingale-forced-alignment-analysis.md
 
 # Local alignment inputs/outputs
 **/local_input/

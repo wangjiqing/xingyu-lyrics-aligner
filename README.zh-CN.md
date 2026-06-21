@@ -2,86 +2,217 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是一个本地优先的歌词强制对齐工具骨架。用户提供音频文件与可信歌词文本；未来版本会把歌词对齐到音频时间轴，并导出行级 LRC、词级或字级 JSON 时间轴。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.1.1 支持把本地音频与用户提供的逐行可信歌词直接对齐，并导出精简 JSON 时间轴与标准行级 LRC。
 
-v0.1.0 的目标很克制：建立 Python 工程基础、CLI 形状、最小国际化、设备检查、数据模型和文档边界。当前版本不做真实模型推理。
+普通用户推荐使用：
 
-## 当前范围
+```bash
+xingyu-align
+```
 
-v0.1.0 已包含：
+`xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-- Python `src/` layout 与 `pyproject.toml`。
-- Typer CLI 入口：`xingyu-align`。
-- 命令：`doctor`、`models list`、`models status`、`align`。
-- 最小 `en-US` 与 `zh-CN` CLI 文案资源。
-- 设备策略定义：`auto`、`cpu`、`cuda`、`mps`。
-- 面向未来任务 manifest、模型 manifest、对齐结果与导出结果的 Pydantic 数据模型。
-- smoke tests 以及基础 lint、format、type-check 配置。
+## v0.1.1 能做什么
 
-v0.1.0 不包含：
+- 读取本地音频文件和逐行可信歌词文本。
+- 构建中文 CTC alignment text，但不改写 display lyrics。
+- 使用 WhisperX CTC forced alignment，不运行 ASR 听写。
+- 导出 `alignment.json`、`lyrics.lrc`、`report.json`。
+- 可选使用手工 section manifest 做结构化分段对齐。
 
-- Whisper 自动听写或自动识别歌词。
-- 人声分离。
-- 真实强制对齐。
-- 模型下载或内置模型权重。
-- 数据库、Web UI 或桌面 UI。
+## 运行边界与已知限制
 
-## 开发安装
+- ASR transcription 不是默认主路径。
+- 不联网匹配歌词，不改写用户歌词，不上传音频。
+- v0.1.1 不包含 Demucs、UVR、GUI、数据库或 Web 服务。
+- macOS 上请求 MPS 时，WhisperX alignment 可能回退 CPU。
+- macOS 安装脚本不承诺 Windows CUDA。
+- LRC 行级展示可能受播放器实现影响，不同播放器对行间滚动的处理可能不同。
+- 复杂独白、重叠前景声部和手工 section 边界仍需人工复核；请关注
+  `foreground_voice_switch` 与 `section_boundary_review` warning。
+- 人声分离不是 v0.1.1 默认能力。
+- 真实音频、歌词、LRC、JSON 时间轴和模型缓存不要提交到 Git。
 
-项目使用 Python `>=3.11,<3.14`。这个范围既能使用较新的 Python 能力，又为未来 macOS Apple Silicon、Windows CUDA 与 CPU 场景下的 PyTorch 生态兼容性留出保守空间。
+## macOS 快捷安装
+
+安装脚本面向 macOS Apple Silicon / CPU 路线，只支持从源码仓库安装。它不会安装 Homebrew，不会修改 shell 配置，也不会自动下载模型。
+
+```bash
+git clone https://github.com/wangjiqing/xingyu-lyrics-aligner.git
+cd xingyu-lyrics-aligner
+./scripts/install-macos.sh
+```
+
+安装时选择并保存默认 CLI 语言：
+
+```bash
+./scripts/install-macos.sh --locale zh-CN
+```
+
+如果缺少 `ffmpeg`，请自行安装：
+
+```bash
+brew install ffmpeg
+```
+
+如果 `~/.local/bin` 不在 `PATH`，安装脚本会打印可复制的 zsh 命令：
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+安装后：
+
+```bash
+xingyu-align doctor
+xingyu-align models pull --language zh
+xingyu-align align --help
+```
+
+模型、缓存、配置和启动器路径细节见
+[运行时环境](docs/runtime-environment.zh-CN.md)。
+
+之后也可以修改已保存的 CLI 语言：
+
+```bash
+xingyu-align config set-locale zh-CN
+xingyu-align config show
+```
+
+## 手动开发安装
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,alignment]"
 ```
 
-## CLI 预览
+开发者兜底入口：
+
+```bash
+python -m xingyu_lyrics_aligner.cli --help
+```
+
+## doctor
 
 ```bash
 xingyu-align doctor
-xingyu-align models list
-xingyu-align models status
-xingyu-align align --audio song.wav --lyrics lyrics.txt --device auto --language zh-CN
 ```
 
-`align` 当前只校验输入，不会伪造任何对齐结果。
+用于检查 Python、系统、CPU/GPU 能力提示和 `ffmpeg`。
 
-语言可以通过环境变量或预留的全局参数切换：
+## 模型下载
+
+检查中文对齐模型状态：
 
 ```bash
-XINGYU_ALIGN_LOCALE=zh-CN xingyu-align doctor
-xingyu-align --locale zh-CN doctor
+xingyu-align models status --language zh
 ```
 
-## 计划中的输入输出
+显式下载或预热中文 alignment model：
 
-计划输入：
+```bash
+xingyu-align models pull --language zh
+```
 
-- 本地音频文件。
-- 用户提供的可信歌词文本，或未来从星语音库边界传入的歌词文本。
-- 可选设备与语言提示。
+`pull` 会在下载前显示模型名称、来源和体积提示；它不会运行 ASR，也不会生成歌曲结果。
 
-计划输出：
+## 最小对齐命令
 
-- 行级 LRC。
-- 包含行级、词级、字级映射的内部 JSON。
-- 面向人工校对流程的 confidence 与 review status 字段。
-- 任务 manifest，记录 audio hash、lyrics hash、device、model version、language、alignment mode、created time。
+```bash
+xingyu-align align \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir "/path/to/output" \
+  --language zh
+```
 
-## 本地优先原则
+使用手工 section manifest：
 
-音频与歌词默认应在本地处理。项目核心对齐流程不应把音频上传到第三方 API。
+```bash
+xingyu-align align \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir "/path/to/output" \
+  --language zh \
+  --section-manifest "/path/to/song.sections.json"
+```
 
-## 许可证
+真实歌曲输出请写到仓库外，或写到已 ignored 的 `local_output/` 等目录。
 
-Apache-2.0。参见 [LICENSE](LICENSE)。
+## 输出文件说明
+
+- `alignment.json`：后续逐字高亮的核心时间轴，保留可信歌词原文和 token 时间。
+- `lyrics.lrc`：标准行级 LRC。`--lrc-offset-ms` 只影响这个文件。
+- `report.json`：统计、warning、模型和设备信息，不复制整首歌词。
+
+## 从任意目录调用
+
+macOS 安装脚本会创建：
+
+```text
+~/.local/bin/xingyu-align
+```
+
+它稳定指向当前源码仓库的 `.venv`，因此可以：
+
+```bash
+cd /tmp
+xingyu-align --help
+```
+
+## 常见问题
+
+### 找不到命令
+
+确认 `~/.local/bin` 在 `PATH`：
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 缺少 ffmpeg
+
+请手动安装：
+
+```bash
+brew install ffmpeg
+```
+
+### 模型未准备
+
+运行：
+
+```bash
+xingyu-align models pull --language zh
+```
+
+### MPS 回退 CPU
+
+这是当前 macOS WhisperX CTC alignment 路线的预期限制。结果元数据会记录 requested device 与 actual alignment device。
+
+### 输出目录已存在
+
+换一个输出目录，或显式传入：
+
+```bash
+--overwrite
+```
+
+### Git 安全
+
+不要提交真实音频、可信歌词、生成的 LRC、完整 JSON 时间轴、模型缓存、stems 或 `local_output/`。
 
 ## 开发检查
 
 ```bash
-ruff format .
 ruff check .
-mypy
 pytest
+bash -n scripts/install-macos.sh
 ```
+
+## 许可证
+
+Apache-2.0。参见 [LICENSE](LICENSE)。

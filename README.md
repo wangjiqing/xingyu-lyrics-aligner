@@ -2,86 +2,231 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first lyrics forced-alignment toolkit bootstrap. Users will provide an audio file and trusted lyrics text; future versions can align the lyrics to the audio and export line-level LRC plus word-level or character-level JSON timelines.
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.1.1 aligns
+a local audio file against user-provided lyric lines and exports a compact JSON
+timeline plus a standard line-level LRC file.
 
-The v0.1.0 scope is intentionally small: it creates the Python project foundation, CLI shape, i18n structure, device checks, data models, and documentation boundaries. It does not perform real model inference.
+The recommended user command is:
 
-## Current Scope
+```bash
+xingyu-align
+```
 
-Included in v0.1.0:
+`xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
+xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-- Python `src/` layout with `pyproject.toml`.
-- Typer CLI entrypoint: `xingyu-align`.
-- Commands: `doctor`, `models list`, `models status`, and `align`.
-- Minimal `en-US` and `zh-CN` CLI text resources.
-- Device strategy definitions: `auto`, `cpu`, `cuda`, and `mps`.
-- Pydantic schemas for future job manifests, model manifests, alignment results, and exports.
-- Smoke tests and baseline lint, format, and type-check configuration.
+## What v0.1.1 Can Do
 
-Not included in v0.1.0:
+- Read a local audio file and a trusted line-by-line lyrics text file.
+- Build Chinese CTC alignment text without rewriting the display lyrics.
+- Run WhisperX CTC forced alignment without ASR transcription.
+- Export `alignment.json`, `lyrics.lrc`, and `report.json`.
+- Optionally use a manual section manifest for structure-aware alignment.
 
-- Whisper transcription or automatic lyric recognition.
-- Vocal separation.
-- Real forced alignment.
-- Model downloads or bundled model weights.
-- Database, Web UI, or desktop UI.
+## Boundaries And Known Limits
 
-## Install for Development
+- ASR transcription is not the default path.
+- The CLI does not fetch public lyrics, rewrite user lyrics, or upload audio.
+- Demucs, UVR, GUI, database, and Web services are out of scope for v0.1.1.
+- macOS MPS may fall back to CPU for WhisperX alignment.
+- Windows CUDA is not covered by the macOS installer.
+- LRC display timing can vary by player because each player decides how to render
+  line transitions.
+- Complex spoken parts, overlapping foreground voices, and manual section
+  boundaries still need review. Watch for `foreground_voice_switch` and
+  `section_boundary_review` warnings.
+- Vocal separation is not a v0.1.1 default capability.
+- Real audio, lyrics, LRC, JSON timelines, and model caches should not be committed.
 
-Python `>=3.11,<3.14` is used to keep a modern language baseline while staying conservative for future PyTorch packaging on macOS Apple Silicon, Windows CUDA, and CPU environments.
+## macOS Quick Install
+
+This installer supports source checkouts on macOS Apple Silicon / CPU routes. It
+does not install Homebrew, does not edit shell config, and does not download
+models automatically.
+
+```bash
+git clone https://github.com/wangjiqing/xingyu-lyrics-aligner.git
+cd xingyu-lyrics-aligner
+./scripts/install-macos.sh
+```
+
+To choose and save the default CLI language during install:
+
+```bash
+./scripts/install-macos.sh --locale zh-CN
+```
+
+If `ffmpeg` is missing, install it yourself:
+
+```bash
+brew install ffmpeg
+```
+
+If `~/.local/bin` is not on `PATH`, the installer prints the exact zsh command:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+After installation:
+
+```bash
+xingyu-align doctor
+xingyu-align models pull --language zh
+xingyu-align align --help
+```
+
+For model, cache, config, and launcher path details, see
+[Runtime Environment](docs/runtime-environment.md).
+
+You can change the saved CLI language later:
+
+```bash
+xingyu-align config set-locale zh-CN
+xingyu-align config show
+```
+
+## Manual Development Install
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,alignment]"
 ```
 
-## CLI Preview
+Developer fallback:
+
+```bash
+python -m xingyu_lyrics_aligner.cli --help
+```
+
+## Doctor
 
 ```bash
 xingyu-align doctor
-xingyu-align models list
-xingyu-align models status
-xingyu-align align --audio song.wav --lyrics lyrics.txt --device auto --language zh-CN
 ```
 
-`align` validates inputs only. It will not fabricate an alignment result.
+Checks Python, OS, CPU/GPU capability hints, and `ffmpeg`.
 
-Locale can be selected with either:
+## Model Download
+
+Check local model status:
 
 ```bash
-XINGYU_ALIGN_LOCALE=zh-CN xingyu-align doctor
-xingyu-align --locale zh-CN doctor
+xingyu-align models status --language zh
 ```
 
-## Planned Inputs and Outputs
+Explicitly download/preheat the Chinese alignment model:
 
-Planned input:
+```bash
+xingyu-align models pull --language zh
+```
 
-- A local audio file.
-- Trusted lyrics text supplied by the user or a future Xingyu music-library boundary.
-- Optional device and language hints.
+`pull` prints the model name, source, and size notice before download. It does
+not run ASR transcription and does not generate song outputs.
 
-Planned output:
+## Minimal Alignment Command
 
-- Line-level LRC.
-- Internal JSON with line-level, word-level, and character-level mappings.
-- Confidence and review status fields for human correction workflows.
-- Job manifests containing audio hash, lyrics hash, device, model version, language, alignment mode, and created time.
+```bash
+xingyu-align align \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir "/path/to/output" \
+  --language zh
+```
 
-## Local-First Principle
+With a manual section manifest:
 
-Audio and lyrics should be processed locally by default. The project must not upload audio to third-party APIs as part of the core alignment workflow.
+```bash
+xingyu-align align \
+  --audio "/path/to/song.flac" \
+  --lyrics "/path/to/song.txt" \
+  --output-dir "/path/to/output" \
+  --language zh \
+  --section-manifest "/path/to/song.sections.json"
+```
 
-## License
+Write real outputs outside the repository or under ignored directories such as
+`local_output/`.
 
-Apache-2.0. See [LICENSE](LICENSE).
+## Output Files
+
+- `alignment.json`: the core timeline for future character highlighting. It
+  preserves trusted lyric display text and token timestamps.
+- `lyrics.lrc`: standard line-level LRC export. `--lrc-offset-ms` only affects
+  this file.
+- `report.json`: compact statistics, warnings, model, and device information. It
+  does not copy the full lyrics.
+
+## Run From Any Directory
+
+The macOS installer creates:
+
+```text
+~/.local/bin/xingyu-align
+```
+
+It points to this checkout's `.venv`, so you can run:
+
+```bash
+cd /tmp
+xingyu-align --help
+```
+
+## FAQ
+
+### `xingyu-align: command not found`
+
+Make sure `~/.local/bin` is on `PATH`:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### `ffmpeg` is missing
+
+Install it manually:
+
+```bash
+brew install ffmpeg
+```
+
+### Model Not Prepared
+
+Run:
+
+```bash
+xingyu-align models pull --language zh
+```
+
+### MPS Falls Back To CPU
+
+This is expected for the current WhisperX CTC alignment route on macOS. The
+result metadata records the requested and actual alignment device.
+
+### Output Already Exists
+
+Use a new output directory or pass:
+
+```bash
+--overwrite
+```
+
+### Git Safety
+
+Do not commit real audio, trusted lyric files, generated LRC, full JSON
+timelines, model caches, stems, or `local_output/`.
 
 ## Development Checks
 
 ```bash
-ruff format .
 ruff check .
-mypy
 pytest
+bash -n scripts/install-macos.sh
 ```
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).

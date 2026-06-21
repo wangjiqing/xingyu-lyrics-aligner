@@ -1,4 +1,6 @@
-"""Project directory conventions.
+"""Reserved project directory conventions.
+
+This module is not wired into v0.1.1 runtime commands yet.
 
 These paths are intentionally based on the CLI runtime working directory.
 That is convenient for local-first commands run beside media files, but a

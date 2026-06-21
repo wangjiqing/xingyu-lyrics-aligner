@@ -31,6 +31,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+alignment = [
+  "jieba>=0.42.1,<1",
+  "whisperx==3.8.6",
+]
 dev = [
   "mypy>=1.10,<2",
   "pytest>=8,<9",
@@ -39,6 +43,7 @@ dev = [
 
 [project.scripts]
 xingyu-align = "xingyu_lyrics_aligner.cli:app"
+xingyu-lyrics-aligner = "xingyu_lyrics_aligner.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/xingyu_lyrics_aligner"]
