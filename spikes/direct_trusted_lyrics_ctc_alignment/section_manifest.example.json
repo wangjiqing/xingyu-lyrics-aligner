@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "sections": [
+    {
+      "id": "verse_before_phone",
+      "audio_start": 0.0,
+      "audio_end": 90.0,
+      "line_start": 0,
+      "line_end": 12,
+      "kind": "singing"
+    },
+    {
+      "id": "phone_voice",
+      "audio_start": 90.0,
+      "audio_end": 120.0,
+      "line_start": 12,
+      "line_end": 16,
+      "kind": "foreground_voice_switch"
+    },
+    {
+      "id": "after_phone",
+      "audio_start": 120.0,
+      "audio_end": 210.0,
+      "line_start": 16,
+      "line_end": 28,
+      "kind": "singing"
+    }
+  ]
+}

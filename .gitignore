@@ -49,3 +49,35 @@ outputs/*
 *.log
 *.tmp
 *.manifest.json
+
+# Local-only research and discarded experiments
+/spikes/end_to_end_alignment/
+/docs/research/nightingale-forced-alignment-analysis.md
+
+# Local alignment inputs/outputs
+**/local_input/
+**/local_output/
+
+# Audio and private lyric samples inside spikes
+/spikes/**/sample_input/*.flac
+/spikes/**/sample_input/*.mp3
+/spikes/**/sample_input/*.wav
+/spikes/**/sample_input/*.m4a
+/spikes/**/sample_input/*.aac
+/spikes/**/sample_input/*.ogg
+/spikes/**/sample_input/*.opus
+/spikes/**/sample_input/*.txt
+
+# Generated lyric artifacts inside spikes
+/spikes/**/sample_output/*.lrc
+/spikes/**/sample_output/*.json
+
+# Python / ML runtime artifacts in nested spike workspaces
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/models/
+**/cache/
+**/stems/
