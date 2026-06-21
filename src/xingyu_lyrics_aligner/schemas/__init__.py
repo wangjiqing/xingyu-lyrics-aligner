@@ -1,4 +1,4 @@
-"""Pydantic models for future alignment jobs and outputs."""
+"""Pydantic schemas used by the CLI and alignment pipeline."""
 
 from __future__ import annotations
 
@@ -9,6 +9,15 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from xingyu_lyrics_aligner.device import DeviceStrategy
+from xingyu_lyrics_aligner.schemas.alignment import (
+    AlignmentDocument,
+    AlignmentLine,
+    AlignmentSource,
+    AlignmentStatus,
+    AlignmentToken,
+    ReportDocument,
+)
+from xingyu_lyrics_aligner.schemas.manifest import Section, SectionManifest
 
 
 class AlignmentMode(StrEnum):
@@ -87,3 +96,22 @@ class ExportResult(BaseModel):
     includes_word_level: bool = False
     includes_character_level: bool = False
     created_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+__all__ = [
+    "AlignmentDocument",
+    "AlignmentLine",
+    "AlignmentMode",
+    "AlignmentResult",
+    "AlignmentSource",
+    "AlignmentStatus",
+    "AlignmentToken",
+    "ExportResult",
+    "JobManifest",
+    "ModelManifest",
+    "ReportDocument",
+    "ReviewStatus",
+    "Section",
+    "SectionManifest",
+    "TimedTextSpan",
+]

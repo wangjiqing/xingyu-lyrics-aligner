@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from pytest import MonkeyPatch
 from typer.testing import CliRunner
 
+from xingyu_lyrics_aligner.alignment.models import (
+    AlignmentModelPullResult,
+    AlignmentModelStatus,
+)
+from xingyu_lyrics_aligner.alignment.pipeline import AlignRunResult
 from xingyu_lyrics_aligner.cli import app
+from xingyu_lyrics_aligner.schemas.alignment import (
+    AlignmentDocument,
+    AlignmentSource,
+    ReportDocument,
+)
 
 runner = CliRunner()
 
@@ -23,15 +35,65 @@ def test_models_list_smoke() -> None:
     assert result.exit_code == 0
     assert "Known model slots" in result.stdout
     assert "forced-aligner" in result.stdout
-    assert "placeholder only" in result.stdout
+    assert "metadata only" in result.stdout
 
 
 def test_models_status_smoke() -> None:
-    result = runner.invoke(app, ["models", "status"])
+    result = runner.invoke(app, ["models", "status", "--language", "zh"])
 
     assert result.exit_code == 0
     assert "Local model status" in result.stdout
-    assert "No model files are required or installed" in result.stdout
+    assert "No model files are bundled" in result.stdout
+    assert "forced-aligner" in result.stdout
+
+
+def test_models_pull_smoke_without_network(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.cli.alignment_model_status",
+        lambda language: AlignmentModelStatus(
+            language=language,
+            model_name="fake/zh-model",
+            available=False,
+            detail="not found",
+        ),
+    )
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.cli.pull_alignment_model",
+        lambda language, device: AlignmentModelPullResult(
+            language=language,
+            model_name="fake/zh-model",
+            actual_device="cpu",
+            warnings=[],
+        ),
+    )
+
+    result = runner.invoke(app, ["models", "pull", "--language", "zh"])
+
+    assert result.exit_code == 0
+    assert "No ASR transcription will run" in result.stdout
+    assert "fake/zh-model" in result.stdout
+
+
+def test_models_pull_network_error_is_actionable(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.cli.alignment_model_status",
+        lambda language: AlignmentModelStatus(
+            language=language,
+            model_name="fake/zh-model",
+            available=False,
+            detail="not found",
+        ),
+    )
+
+    def fail_pull(language: str, device: object) -> AlignmentModelPullResult:
+        raise RuntimeError("Cannot reach huggingface.co. Check network/DNS.")
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.cli.pull_alignment_model", fail_pull)
+
+    result = runner.invoke(app, ["models", "pull", "--language", "zh"])
+
+    assert result.exit_code == 2
+    assert "Cannot reach huggingface.co" in result.stderr
 
 
 def test_locale_switch_with_option() -> None:
@@ -51,6 +113,31 @@ def test_locale_switch_with_env_var(monkeypatch: MonkeyPatch) -> None:
     assert "星语歌词对齐环境检查" in result.stdout
 
 
+def test_saved_locale_preference(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("XINGYU_ALIGN_LOCALE", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    save_result = runner.invoke(app, ["config", "set-locale", "zh-CN"])
+    assert save_result.exit_code == 0
+    assert "zh-CN" in save_result.stdout
+
+    result = runner.invoke(app, ["doctor"])
+
+    assert result.exit_code == 0
+    assert "星语歌词对齐环境检查" in result.stdout
+
+
+def test_config_show_when_locale_not_set(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("XINGYU_ALIGN_LOCALE", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 0
+    assert "User preferences" in result.stdout
+    assert "not set" in result.stdout
+
+
 def test_align_missing_files_is_clear() -> None:
     result = runner.invoke(
         app,
@@ -60,9 +147,68 @@ def test_align_missing_files_is_clear() -> None:
             "missing-audio.wav",
             "--lyrics",
             "missing-lyrics.txt",
+            "--output-dir",
+            "out",
         ],
     )
 
     assert result.exit_code == 2
-    assert "File does not exist: missing-audio.wav" in result.stderr
-    assert "File does not exist: missing-lyrics.txt" in result.stderr
+    assert "Audio file does not exist: missing-audio.wav" in result.stderr
+
+
+def test_align_help_smoke() -> None:
+    result = runner.invoke(app, ["align", "--help"])
+
+    assert result.exit_code == 0
+    assert "--section-manifest" in result.stdout
+    assert "--lrc-offset-ms" in result.stdout
+
+
+def test_align_cli_smoke_without_model(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    audio = tmp_path / "song.wav"
+    lyrics = tmp_path / "lyrics.txt"
+    output = tmp_path / "out"
+    audio.write_bytes(b"fake")
+    lyrics.write_text("星语发光\n", encoding="utf-8")
+
+    def fake_run_alignment(request: object) -> AlignRunResult:
+        source = AlignmentSource(
+            audio_name="song.wav",
+            alignment_model="fake-model",
+            requested_device="cpu",
+            actual_alignment_device="cpu",
+        )
+        alignment = AlignmentDocument(language="zh", source=source, lines=[])
+        report = ReportDocument(
+            language="zh",
+            source=source,
+            line_count=0,
+            aligned_or_partial_lines=0,
+            input_alignment_characters=0,
+            timed_character_entries=0,
+            missing_character_timestamps=0,
+            character_count_matches=True,
+            non_monotonic_line_count=0,
+            status_counts={},
+        )
+        return AlignRunResult(alignment=alignment, report=report, output_dir=output)
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.commands.align.run_alignment", fake_run_alignment)
+
+    result = runner.invoke(
+        app,
+        [
+            "align",
+            "--audio",
+            str(audio),
+            "--lyrics",
+            str(lyrics),
+            "--output-dir",
+            str(output),
+            "--device",
+            "cpu",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Alignment completed" in result.stdout

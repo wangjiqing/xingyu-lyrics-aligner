@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from xingyu_lyrics_aligner.alignment.models import alignment_model_status, pull_alignment_model
+from xingyu_lyrics_aligner.commands.align import align_command
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.doctor import run_doctor
-from xingyu_lyrics_aligner.i18n import configure_locale
+from xingyu_lyrics_aligner.i18n import configure_locale, normalize_locale
 from xingyu_lyrics_aligner.i18n import translate as _
 from xingyu_lyrics_aligner.model_registry import known_model_slots
+from xingyu_lyrics_aligner.user_config import UserConfig, load_user_config, save_user_config
 
 app = typer.Typer(help=_("app.help"), no_args_is_help=True)
-models_app = typer.Typer(help=_("command.models.help"), no_args_is_help=True)
+models_app = typer.Typer(
+    help=_("command.models.help"),
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+config_app = typer.Typer(help=_("command.config.help"), no_args_is_help=True)
 app.add_typer(models_app, name="models")
+app.add_typer(config_app, name="config")
 
 MODEL_DISPLAY_KEYS = {
     "forced-aligner": "models.slot.aligner",
@@ -66,6 +74,42 @@ def doctor() -> None:
     typer.echo(_("doctor.summary.ready"))
 
 
+@config_app.command("show", help=_("command.config.show.help"))
+def config_show() -> None:
+    """Show saved user preferences."""
+    config = load_user_config()
+    typer.echo(_("config.title"))
+    typer.echo(f"{_('label.language')}: {config.locale or _('config.locale.not_set')}")
+
+
+@config_app.command("set-locale", help=_("command.config.set_locale.help"))
+def config_set_locale(
+    locale: Annotated[
+        str,
+        typer.Argument(help=_("option.locale.help")),
+    ],
+) -> None:
+    """Persist the default CLI locale."""
+    normalized = normalize_locale(locale)
+    if normalized != locale:
+        typer.echo(_("error.unsupported_locale", locale=locale), err=True)
+        raise typer.Exit(code=2)
+    try:
+        path = save_user_config(UserConfig(locale=normalized))
+    except OSError as exc:
+        typer.echo(_("error.config_write_failed", error=exc), err=True)
+        raise typer.Exit(code=2) from exc
+    configure_locale(normalized)
+    typer.echo(_("config.locale.saved", locale=normalized, path=path))
+
+
+@models_app.callback()
+def models(ctx: typer.Context) -> None:
+    """Show local model status when no model subcommand is selected."""
+    if ctx.invoked_subcommand is None:
+        models_status()
+
+
 @models_app.command("list", help=_("command.models.list.help"))
 def models_list() -> None:
     """List known model slots."""
@@ -76,57 +120,61 @@ def models_list() -> None:
 
 
 @models_app.command("status", help=_("command.models.status.help"))
-def models_status() -> None:
+def models_status(
+    language: Annotated[
+        str,
+        typer.Option("--language", help=_("option.language.help")),
+    ] = "zh",
+) -> None:
     """Show local model status."""
     typer.echo(_("models.status.title"))
+    try:
+        status = alignment_model_status(language)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    state = _("doctor.available") if status.available else _("doctor.not_available")
+    typer.echo(f"- forced-aligner: {state}")
+    typer.echo(f"  language: {status.language}")
+    typer.echo(f"  model: {status.model_name}")
+    typer.echo(f"  detail: {status.detail}")
+    typer.echo("- vocal-separator: not required for v0.1.1")
     typer.echo(_("models.none_installed"))
-    for model in known_model_slots():
-        typer.echo(f"- {model.model_id}: {_('doctor.not_available')}")
 
 
-@app.command(help=_("command.align.help"))
-def align(
-    audio: Annotated[
-        Path,
-        typer.Option(
-            "--audio",
-            "-a",
-            exists=False,
-            file_okay=True,
-            dir_okay=False,
-            help=_("option.audio.help"),
-        ),
-    ],
-    lyrics: Annotated[
-        Path,
-        typer.Option(
-            "--lyrics",
-            "-l",
-            exists=False,
-            file_okay=True,
-            dir_okay=False,
-            help=_("option.lyrics.help"),
-        ),
-    ],
+@models_app.command("pull", help=_("command.models.pull.help"))
+def models_pull(
+    language: Annotated[
+        str,
+        typer.Option("--language", help=_("option.language.help")),
+    ] = "zh",
     device: Annotated[
         DeviceStrategy,
         typer.Option("--device", help=_("option.device.help")),
     ] = DeviceStrategy.AUTO,
-    language: Annotated[
-        str | None,
-        typer.Option("--language", help=_("option.language.help")),
-    ] = None,
 ) -> None:
-    """Validate an alignment request without running inference."""
-    missing_paths = [path for path in (audio, lyrics) if not path.exists()]
-    if missing_paths:
-        for path in missing_paths:
-            typer.echo(_("error.file_missing", path=path), err=True)
-        raise typer.Exit(code=2)
+    """Explicitly download/preheat the local alignment model."""
+    try:
+        status = alignment_model_status(language)
+        typer.echo(_("models.pull.notice"))
+        typer.echo(f"language: {language}")
+        typer.echo(f"model: {status.model_name}")
+        typer.echo(f"source: {status.model_name}")
+        typer.echo(_("models.pull.size_notice"))
+        result = pull_alignment_model(language=language, device=device)
+    except (RuntimeError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
 
-    typer.echo(_("align.request"))
-    typer.echo(f"{_('option.audio.help')} {audio}")
-    typer.echo(f"{_('option.lyrics.help')} {lyrics}")
-    typer.echo(f"{_('label.device')}: {device.value}")
-    typer.echo(f"{_('label.language')}: {language or 'auto'}")
-    typer.echo(_("align.not_implemented"))
+    typer.echo(_("models.pull.completed"))
+    typer.echo(f"model: {result.model_name}")
+    typer.echo(f"actual_alignment_device: {result.actual_device}")
+    for warning in result.warnings:
+        typer.echo(f"warning: {warning}")
+
+
+app.command(name="align", help=_("command.align.help"))(align_command)
+
+
+if __name__ == "__main__":
+    app()

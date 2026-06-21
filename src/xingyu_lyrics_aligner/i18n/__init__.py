@@ -7,6 +7,8 @@ import os
 from importlib import resources
 from typing import Any
 
+from xingyu_lyrics_aligner.user_config import load_user_config
+
 DEFAULT_LOCALE = "en-US"
 SUPPORTED_LOCALES = ("en-US", "zh-CN")
 ENV_LOCALE = "XINGYU_ALIGN_LOCALE"
@@ -24,9 +26,10 @@ def normalize_locale(locale: str | None) -> str:
 
 
 def configure_locale(locale: str | None = None) -> str:
-    """Set the active locale from an explicit value or the environment."""
+    """Set active locale from explicit value, environment, saved config, or default."""
     global _active_locale
-    _active_locale = normalize_locale(locale or os.environ.get(ENV_LOCALE))
+    configured = load_user_config().locale
+    _active_locale = normalize_locale(locale or os.environ.get(ENV_LOCALE) or configured)
     return _active_locale
 
 
