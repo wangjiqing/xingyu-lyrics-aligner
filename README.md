@@ -50,6 +50,18 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
+Install directly from the GitHub v0.2.0 tag:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0
+```
+
+Include optional candidate-lyrics dependencies:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0 --candidate-lyrics
+```
+
 To choose and save the default CLI language during install:
 
 ```bash
@@ -85,6 +97,13 @@ You can change the saved CLI language later:
 ```bash
 xingyu-align config set-locale zh-CN
 xingyu-align config show
+```
+
+Update from GitHub:
+
+```bash
+xingyu-align update --run
+xingyu-align update --candidate-lyrics --ref v0.2.0 --run
 ```
 
 ## Manual Development Install

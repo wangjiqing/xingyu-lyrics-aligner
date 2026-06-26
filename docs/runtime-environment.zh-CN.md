@@ -106,13 +106,23 @@ Xingyu Lyrics Aligner 不删除模型缓存。
 
 ## 项目安装目录
 
-macOS 安装脚本基于源码仓库安装，会创建或复用：
+macOS 安装脚本支持源码仓库模式和 GitHub 安装模式。
+
+源码仓库模式会创建或复用：
 
 ```text
 <repo>/.venv/
 ```
 
 editable install 指向当前源码仓库。如果移动或删除仓库，launcher 可能失效，需要重新运行安装脚本。
+
+GitHub 安装模式会创建或复用：
+
+```text
+~/.local/share/xingyu-lyrics-aligner/venv/
+```
+
+它会从 `main`、`v0.2.0` 等 Git ref 安装。
 
 ## 用户级启动器
 
@@ -126,6 +136,12 @@ macOS 安装脚本会创建：
 
 ```text
 <repo>/.venv/bin/xingyu-align
+```
+
+GitHub 安装模式下，launcher 指向：
+
+```text
+~/.local/share/xingyu-lyrics-aligner/venv/bin/xingyu-align
 ```
 
 安装脚本不会修改 shell 配置。如果 `~/.local/bin` 不在 `PATH`，需要用户手动加入。

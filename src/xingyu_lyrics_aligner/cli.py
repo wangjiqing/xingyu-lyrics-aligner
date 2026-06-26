@@ -44,6 +44,7 @@ MODEL_DISPLAY_KEYS = {
     "forced-aligner": "models.slot.aligner",
     "vocal-separator": "models.slot.separator",
 }
+GITHUB_REPOSITORY_URL = "https://github.com/wangjiqing/xingyu-lyrics-aligner.git"
 
 
 def _localized_bool(value: bool) -> str:
@@ -80,12 +81,9 @@ def version() -> None:
     typer.echo(f"xingyu-lyrics-aligner {__version__}")
 
 
-def _upgrade_command(include_candidate_lyrics: bool) -> list[str]:
-    package = (
-        "xingyu-lyrics-aligner[candidate-lyrics]"
-        if include_candidate_lyrics
-        else "xingyu-lyrics-aligner"
-    )
+def _upgrade_command(include_candidate_lyrics: bool, ref: str) -> list[str]:
+    extra = "[candidate-lyrics]" if include_candidate_lyrics else ""
+    package = f"xingyu-lyrics-aligner{extra} @ git+{GITHUB_REPOSITORY_URL}@{ref}"
     return [sys.executable, "-m", "pip", "install", "--upgrade", package]
 
 
@@ -100,11 +98,16 @@ def update(
         bool,
         typer.Option("--candidate-lyrics", help=_("option.update_candidate_lyrics.help")),
     ] = False,
+    ref: Annotated[
+        str,
+        typer.Option("--ref", help=_("option.update_ref.help")),
+    ] = "main",
 ) -> None:
     """Print or run the recommended package upgrade command."""
 
-    command = _upgrade_command(candidate_lyrics)
+    command = _upgrade_command(candidate_lyrics, ref)
     typer.echo(_("update.current_version", version=__version__))
+    typer.echo(_("update.ref", ref=ref))
     typer.echo(_("update.command", command=" ".join(command)))
     if not run:
         typer.echo(_("update.dry_run_notice"))

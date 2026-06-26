@@ -112,7 +112,9 @@ Xingyu Lyrics Aligner does not delete model caches.
 
 ## Project Installation Directory
 
-The macOS installer is source-checkout based. It creates or reuses:
+The macOS installer supports source-checkout and GitHub install modes.
+
+Source-checkout mode creates or reuses:
 
 ```text
 <repo>/.venv/
@@ -120,6 +122,14 @@ The macOS installer is source-checkout based. It creates or reuses:
 
 The editable install points to the current checkout. Moving or deleting the
 checkout can break the launcher until the installer is rerun.
+
+GitHub install mode creates or reuses:
+
+```text
+~/.local/share/xingyu-lyrics-aligner/venv/
+```
+
+It installs from a Git ref such as `main` or `v0.2.0`.
 
 ## User Launcher
 
@@ -133,6 +143,12 @@ The launcher is a small wrapper that executes:
 
 ```text
 <repo>/.venv/bin/xingyu-align
+```
+
+In GitHub install mode, the launcher points to:
+
+```text
+~/.local/share/xingyu-lyrics-aligner/venv/bin/xingyu-align
 ```
 
 The installer does not modify shell config. If `~/.local/bin` is not on `PATH`,

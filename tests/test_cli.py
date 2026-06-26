@@ -41,12 +41,13 @@ def test_version_command_and_option() -> None:
 
 
 def test_update_dry_run_prints_upgrade_command() -> None:
-    result = runner.invoke(app, ["update", "--candidate-lyrics"])
+    result = runner.invoke(app, ["update", "--candidate-lyrics", "--ref", "v0.2.0"])
 
     assert result.exit_code == 0
     assert "Current version:" in result.stdout
     assert "pip install --upgrade" in result.stdout
-    assert "xingyu-lyrics-aligner[candidate-lyrics]" in result.stdout
+    assert "xingyu-lyrics-aligner[candidate-lyrics] @ git+" in result.stdout
+    assert "@v0.2.0" in result.stdout
     assert "Dry run only" in result.stdout
 
 
