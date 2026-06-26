@@ -28,14 +28,32 @@ from xingyu_lyrics_aligner.i18n import translate as _
 from xingyu_lyrics_aligner.model_registry import known_model_slots
 from xingyu_lyrics_aligner.user_config import UserConfig, load_user_config, save_user_config
 
-app = typer.Typer(help=_("app.help"), no_args_is_help=True, invoke_without_command=True)
+HELP_CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
+
+app = typer.Typer(
+    help=_("app.help"),
+    epilog=_("app.epilog"),
+    no_args_is_help=True,
+    invoke_without_command=True,
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 models_app = typer.Typer(
     help=_("command.models.help"),
     invoke_without_command=True,
     no_args_is_help=False,
+    context_settings=HELP_CONTEXT_SETTINGS,
 )
-config_app = typer.Typer(help=_("command.config.help"), no_args_is_help=True)
-candidate_app = typer.Typer(help=_("command.candidate.help"), no_args_is_help=True)
+config_app = typer.Typer(
+    help=_("command.config.help"),
+    no_args_is_help=True,
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
+candidate_app = typer.Typer(
+    help=_("command.candidate.help"),
+    epilog=_("candidate.epilog"),
+    no_args_is_help=True,
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 app.add_typer(models_app, name="models")
 app.add_typer(config_app, name="config")
 app.add_typer(candidate_app, name="candidate")
@@ -56,7 +74,7 @@ def _model_display_name(model_id: str, fallback: str) -> str:
     return _(key) if key else fallback
 
 
-@app.callback()
+@app.callback(context_settings=HELP_CONTEXT_SETTINGS)
 def main(
     locale: Annotated[
         str | None,
@@ -74,7 +92,7 @@ def main(
         raise typer.Exit()
 
 
-@app.command("version", help=_("command.version.help"))
+@app.command("version", help=_("command.version.help"), context_settings=HELP_CONTEXT_SETTINGS)
 def version() -> None:
     """Show package version."""
 
@@ -87,8 +105,16 @@ def _upgrade_command(include_candidate_lyrics: bool, ref: str) -> list[str]:
     return [sys.executable, "-m", "pip", "install", "--upgrade", package]
 
 
-@app.command("update", help=_("command.update.help"))
-@app.command("upgrade", help=_("command.update.help"))
+@app.command("help", help=_("command.help.help"), context_settings=HELP_CONTEXT_SETTINGS)
+@app.command("manual", help=_("command.help.help"), context_settings=HELP_CONTEXT_SETTINGS)
+def help_command() -> None:
+    """Show workflow-oriented help."""
+
+    typer.echo(_("help.workflow"))
+
+
+@app.command("update", help=_("command.update.help"), context_settings=HELP_CONTEXT_SETTINGS)
+@app.command("upgrade", help=_("command.update.help"), context_settings=HELP_CONTEXT_SETTINGS)
 def update(
     run: Annotated[
         bool,
@@ -120,7 +146,7 @@ def update(
     typer.echo(_("update.completed"))
 
 
-@app.command(help=_("command.doctor.help"))
+@app.command(help=_("command.doctor.help"), context_settings=HELP_CONTEXT_SETTINGS)
 def doctor() -> None:
     """Check local runtime prerequisites."""
     report = run_doctor()
@@ -143,7 +169,11 @@ def doctor() -> None:
     typer.echo(_("doctor.summary.ready"))
 
 
-@config_app.command("show", help=_("command.config.show.help"))
+@config_app.command(
+    "show",
+    help=_("command.config.show.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def config_show() -> None:
     """Show saved user preferences."""
     config = load_user_config()
@@ -151,7 +181,11 @@ def config_show() -> None:
     typer.echo(f"{_('label.language')}: {config.locale or _('config.locale.not_set')}")
 
 
-@config_app.command("set-locale", help=_("command.config.set_locale.help"))
+@config_app.command(
+    "set-locale",
+    help=_("command.config.set_locale.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def config_set_locale(
     locale: Annotated[
         str,
@@ -172,7 +206,12 @@ def config_set_locale(
     typer.echo(_("config.locale.saved", locale=normalized, path=path))
 
 
-@candidate_app.command("extract", help=_("command.candidate.extract.help"))
+@candidate_app.command(
+    "extract",
+    help=_("command.candidate.extract.help"),
+    epilog=_("candidate.extract.epilog"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def candidate_extract(
     audio: Annotated[
         Path,
@@ -244,7 +283,12 @@ def candidate_extract(
     typer.echo(_("candidate.not_trusted"))
 
 
-@candidate_app.command("normalize", help=_("command.candidate.normalize.help"))
+@candidate_app.command(
+    "normalize",
+    help=_("command.candidate.normalize.help"),
+    epilog=_("candidate.normalize.epilog"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def candidate_normalize(
     input_path: Annotated[
         Path,
@@ -289,7 +333,11 @@ def models(ctx: typer.Context) -> None:
         models_status()
 
 
-@models_app.command("list", help=_("command.models.list.help"))
+@models_app.command(
+    "list",
+    help=_("command.models.list.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def models_list() -> None:
     """List known model slots."""
     typer.echo(_("models.list.title"))
@@ -298,7 +346,11 @@ def models_list() -> None:
         typer.echo(f"- {model.model_id}: {display_name} ({_('models.slot.status.placeholder')})")
 
 
-@models_app.command("status", help=_("command.models.status.help"))
+@models_app.command(
+    "status",
+    help=_("command.models.status.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def models_status(
     language: Annotated[
         str,
@@ -321,7 +373,11 @@ def models_status(
     typer.echo(_("models.none_installed"))
 
 
-@models_app.command("pull", help=_("command.models.pull.help"))
+@models_app.command(
+    "pull",
+    help=_("command.models.pull.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 def models_pull(
     language: Annotated[
         str,
@@ -352,7 +408,12 @@ def models_pull(
         typer.echo(f"warning: {warning}")
 
 
-app.command(name="align", help=_("command.align.help"))(align_command)
+app.command(
+    name="align",
+    help=_("command.align.help"),
+    epilog=_("align.epilog"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)(align_command)
 
 
 if __name__ == "__main__":

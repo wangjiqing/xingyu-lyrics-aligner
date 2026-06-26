@@ -40,6 +40,26 @@ def test_version_command_and_option() -> None:
     assert f"xingyu-lyrics-aligner {__version__}" in option_result.stdout
 
 
+def test_short_help_alias_and_workflow_help() -> None:
+    root_help = runner.invoke(app, ["-h"])
+    candidate_help = runner.invoke(app, ["candidate", "-h"])
+    align_help = runner.invoke(app, ["align", "-h"])
+    workflow_help = runner.invoke(app, ["help"])
+
+    assert root_help.exit_code == 0
+    assert "candidate extract" in root_help.stdout
+    assert candidate_help.exit_code == 0
+    assert "extract" in candidate_help.stdout
+    assert "normalize" in candidate_help.stdout
+    assert align_help.exit_code == 0
+    assert "--lyrics" in align_help.stdout
+    assert workflow_help.exit_code == 0
+    assert "Xingyu Lyrics Aligner workflow" in workflow_help.stdout
+    assert "candidate extract" in workflow_help.stdout
+    assert "candidate normalize" in workflow_help.stdout
+    assert "xingyu-align align" in workflow_help.stdout
+
+
 def test_update_dry_run_prints_upgrade_command() -> None:
     result = runner.invoke(app, ["update", "--candidate-lyrics", "--ref", "v0.2.0"])
 
