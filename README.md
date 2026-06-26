@@ -2,9 +2,9 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.1.1 aligns
-a local audio file against user-provided lyric lines and exports a compact JSON
-timeline plus a standard line-level LRC file.
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.2.0
+aligns a local audio file against user-provided lyric lines, defines SWLRC v1,
+and adds optional ASR candidate-lyrics extraction for manual review.
 
 The recommended user command is:
 
@@ -15,19 +15,27 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.1.1 Can Do
+## What v0.2.0 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
 - Run WhisperX CTC forced alignment without ASR transcription.
 - Export `alignment.json`, `lyrics.lrc`, and `report.json`.
 - Optionally use a manual section manifest for structure-aware alignment.
+- Define and validate SWLRC v1, an enhanced character-/word-level timed lyrics
+  format for Xingyu Audio Library and Xingyu Music Box.
+- Optionally extract ASR candidate lyrics from audio through Demucs vocals
+  separation plus faster-whisper, for manual review only.
+- Generate Simplified or Traditional Chinese review copies of candidate lyrics
+  without overwriting the original ASR output.
 
 ## Boundaries And Known Limits
 
-- ASR transcription is not the default path.
+- ASR transcription is available only through the explicit `candidate extract`
+  workflow and is not part of trusted alignment by default.
 - The CLI does not fetch public lyrics, rewrite user lyrics, or upload audio.
-- Demucs, UVR, GUI, database, and Web services are out of scope for v0.1.1.
+- Demucs is used only by the optional candidate-lyrics workflow. UVR, GUI,
+  database, and Web services are out of scope for v0.2.0.
 - macOS MPS may fall back to CPU for WhisperX alignment.
 - Windows CUDA is not covered by the macOS installer.
 - LRC display timing can vary by player because each player decides how to render
@@ -35,7 +43,7 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 - Complex spoken parts, overlapping foreground voices, and manual section
   boundaries still need review. Watch for `foreground_voice_switch` and
   `section_boundary_review` warnings.
-- Vocal separation is not a v0.1.1 default capability.
+- Vocal separation is not part of the trusted alignment flow.
 - Real audio, lyrics, LRC, JSON timelines, and model caches should not be committed.
 
 ## macOS Quick Install
@@ -86,7 +94,8 @@ After installation:
 ```bash
 xingyu-align doctor
 xingyu-align models pull --language zh
-xingyu-align align --help
+xingyu-align help
+xingyu-align align -h
 ```
 
 For model, cache, config, and launcher path details, see
@@ -117,7 +126,7 @@ python -m pip install -e ".[dev,alignment]"
 Developer fallback:
 
 ```bash
-python -m xingyu_lyrics_aligner.cli --help
+python -m xingyu_lyrics_aligner.cli -h
 ```
 
 ## Doctor
@@ -169,6 +178,46 @@ xingyu-align align \
 Write real outputs outside the repository or under ignored directories such as
 `local_output/`.
 
+## Candidate Lyrics Command
+
+Candidate lyrics are optional ASR output for review. Install candidate
+dependencies first:
+
+```bash
+python -m pip install -e ".[candidate-lyrics]"
+```
+
+Extract candidate lyrics:
+
+```bash
+xingyu-align candidate extract \
+  --audio "/path/to/song.flac" \
+  --output-dir "/path/to/prelyrics" \
+  --language zh \
+  --model medium
+```
+
+This writes `vocals.wav`, `transcript.raw.txt`, `transcript.segments.json`,
+`transcript.cleaned.txt`, and `report.json`. Use `--skip-separation` to skip
+Demucs and transcribe the original mix directly.
+
+Generate Simplified or Traditional Chinese review copies:
+
+```bash
+xingyu-align candidate normalize \
+  --input "/path/to/prelyrics/transcript.cleaned.txt" \
+  --output-dir "/path/to/prelyrics" \
+  --to zh-Hans
+
+xingyu-align candidate normalize \
+  --input "/path/to/prelyrics/transcript.cleaned.txt" \
+  --output-dir "/path/to/prelyrics" \
+  --to zh-Hant
+```
+
+These copies are for manual review, online lyric comparison, and alignment
+preparation. They are not trusted lyrics.
+
 ## Output Files
 
 - `alignment.json`: the core timeline for future character highlighting. It
@@ -188,8 +237,9 @@ Music Box. The v1 specification lives in
 
 ## Candidate Lyrics
 
-Optional scripts can generate ASR candidate lyrics from local audio for manual
-review. They do not replace trusted lyrics and do not produce SWLRC. See
+The `xingyu-align candidate` commands can generate ASR candidate lyrics from
+local audio for manual review. They do not replace trusted lyrics and do not
+produce SWLRC. See
 [Candidate Lyrics](docs/guides/candidate-lyrics.md).
 
 ## Run From Any Directory
