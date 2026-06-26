@@ -159,6 +159,20 @@ Write real outputs outside the repository or under ignored directories such as
 - `report.json`: compact statistics, warnings, model, and device information. It
   does not copy the full lyrics.
 
+## SWLRC
+
+SWLRC (`.swlrc`) is an enhanced character- and word-level timed lyrics format
+defined and emitted by Xingyu Lyrics Aligner for Xingyu Audio Library and Xingyu
+Music Box. The v1 specification lives in
+[docs/specs/swlrc-v1.md](docs/specs/swlrc-v1.md), with readable examples under
+[docs/examples](docs/examples).
+
+## Candidate Lyrics
+
+Optional scripts can generate ASR candidate lyrics from local audio for manual
+review. They do not replace trusted lyrics and do not produce SWLRC. See
+[Candidate Lyrics](docs/guides/candidate-lyrics.md).
+
 ## Run From Any Directory
 
 The macOS installer creates:

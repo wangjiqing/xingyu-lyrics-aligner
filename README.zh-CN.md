@@ -147,6 +147,18 @@ xingyu-align align \
 - `lyrics.lrc`：标准行级 LRC。`--lrc-offset-ms` 只影响这个文件。
 - `report.json`：统计、warning、模型和设备信息，不复制整首歌词。
 
+## SWLRC
+
+SWLRC（`.swlrc`）是 Xingyu Lyrics Aligner 定义并输出的增强逐字 / 逐词歌词格式，
+供星语音库与星语音乐盒使用。v1 规范见
+[docs/specs/swlrc-v1.md](docs/specs/swlrc-v1.md)，可阅读样例见
+[docs/examples](docs/examples)。
+
+## 候选歌词
+
+可选脚本可以从本地音频生成 ASR 候选歌词，供人工复核使用。候选歌词不会替代可信歌词，也不会生成 SWLRC。参见
+[候选歌词提取脚本](docs/guides/candidate-lyrics.md)。
+
 ## 从任意目录调用
 
 macOS 安装脚本会创建：

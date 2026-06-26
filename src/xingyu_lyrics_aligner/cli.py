@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from argparse import Namespace
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from xingyu_lyrics_aligner import __version__
 from xingyu_lyrics_aligner.alignment.models import alignment_model_status, pull_alignment_model
+from xingyu_lyrics_aligner.candidate_lyrics.script_normalization import (
+    ScriptNormalizationError,
+    normalize_transcript_script,
+)
+from xingyu_lyrics_aligner.candidate_lyrics.transcription import (
+    CandidateLyricsError,
+    extract_candidate_lyrics,
+)
 from xingyu_lyrics_aligner.commands.align import align_command
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.doctor import run_doctor
@@ -15,15 +28,17 @@ from xingyu_lyrics_aligner.i18n import translate as _
 from xingyu_lyrics_aligner.model_registry import known_model_slots
 from xingyu_lyrics_aligner.user_config import UserConfig, load_user_config, save_user_config
 
-app = typer.Typer(help=_("app.help"), no_args_is_help=True)
+app = typer.Typer(help=_("app.help"), no_args_is_help=True, invoke_without_command=True)
 models_app = typer.Typer(
     help=_("command.models.help"),
     invoke_without_command=True,
     no_args_is_help=False,
 )
 config_app = typer.Typer(help=_("command.config.help"), no_args_is_help=True)
+candidate_app = typer.Typer(help=_("command.candidate.help"), no_args_is_help=True)
 app.add_typer(models_app, name="models")
 app.add_typer(config_app, name="config")
+app.add_typer(candidate_app, name="candidate")
 
 MODEL_DISPLAY_KEYS = {
     "forced-aligner": "models.slot.aligner",
@@ -46,9 +61,60 @@ def main(
         str | None,
         typer.Option("--locale", help=_("option.locale.help")),
     ] = None,
+    version_requested: Annotated[
+        bool,
+        typer.Option("--version", help=_("command.version.help"), is_eager=True),
+    ] = False,
 ) -> None:
     """Configure process-wide CLI locale."""
     configure_locale(locale)
+    if version_requested:
+        typer.echo(f"xingyu-lyrics-aligner {__version__}")
+        raise typer.Exit()
+
+
+@app.command("version", help=_("command.version.help"))
+def version() -> None:
+    """Show package version."""
+
+    typer.echo(f"xingyu-lyrics-aligner {__version__}")
+
+
+def _upgrade_command(include_candidate_lyrics: bool) -> list[str]:
+    package = (
+        "xingyu-lyrics-aligner[candidate-lyrics]"
+        if include_candidate_lyrics
+        else "xingyu-lyrics-aligner"
+    )
+    return [sys.executable, "-m", "pip", "install", "--upgrade", package]
+
+
+@app.command("update", help=_("command.update.help"))
+@app.command("upgrade", help=_("command.update.help"))
+def update(
+    run: Annotated[
+        bool,
+        typer.Option("--run", help=_("option.update_run.help")),
+    ] = False,
+    candidate_lyrics: Annotated[
+        bool,
+        typer.Option("--candidate-lyrics", help=_("option.update_candidate_lyrics.help")),
+    ] = False,
+) -> None:
+    """Print or run the recommended package upgrade command."""
+
+    command = _upgrade_command(candidate_lyrics)
+    typer.echo(_("update.current_version", version=__version__))
+    typer.echo(_("update.command", command=" ".join(command)))
+    if not run:
+        typer.echo(_("update.dry_run_notice"))
+        return
+    try:
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as exc:
+        typer.echo(_("update.failed", code=exc.returncode), err=True)
+        raise typer.Exit(code=exc.returncode) from exc
+    typer.echo(_("update.completed"))
 
 
 @app.command(help=_("command.doctor.help"))
@@ -101,6 +167,116 @@ def config_set_locale(
         raise typer.Exit(code=2) from exc
     configure_locale(normalized)
     typer.echo(_("config.locale.saved", locale=normalized, path=path))
+
+
+@candidate_app.command("extract", help=_("command.candidate.extract.help"))
+def candidate_extract(
+    audio: Annotated[
+        Path,
+        typer.Option("--audio", help=_("option.audio.help")),
+    ],
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", help=_("option.candidate_output_dir.help")),
+    ],
+    language: Annotated[
+        str | None,
+        typer.Option("--language", help=_("option.language.help")),
+    ] = None,
+    model: Annotated[
+        str,
+        typer.Option("--model", help=_("option.candidate_model.help")),
+    ] = "medium",
+    device: Annotated[
+        DeviceStrategy,
+        typer.Option("--device", help=_("option.device.help")),
+    ] = DeviceStrategy.AUTO,
+    skip_separation: Annotated[
+        bool,
+        typer.Option("--skip-separation", help=_("option.candidate_skip_separation.help")),
+    ] = False,
+    no_vad: Annotated[
+        bool,
+        typer.Option("--no-vad", help=_("option.candidate_no_vad.help")),
+    ] = False,
+    condition_on_previous_text: Annotated[
+        bool,
+        typer.Option(
+            "--condition-on-previous-text",
+            help=_("option.candidate_condition_on_previous_text.help"),
+        ),
+    ] = False,
+    keep_suspected_metadata: Annotated[
+        bool,
+        typer.Option(
+            "--keep-suspected-metadata",
+            help=_("option.candidate_keep_suspected_metadata.help"),
+        ),
+    ] = False,
+    keep_intermediates: Annotated[
+        bool,
+        typer.Option("--keep-intermediates", help=_("option.candidate_keep_intermediates.help")),
+    ] = False,
+) -> None:
+    """Extract ASR candidate lyrics from local audio."""
+
+    args = Namespace(
+        audio=audio,
+        output_dir=output_dir,
+        language=language,
+        model=model,
+        device=device.value,
+        skip_separation=skip_separation,
+        no_vad=no_vad,
+        condition_on_previous_text=condition_on_previous_text,
+        keep_suspected_metadata=keep_suspected_metadata,
+        keep_intermediates=keep_intermediates,
+    )
+    try:
+        report = extract_candidate_lyrics(args)
+    except CandidateLyricsError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    typer.echo(_("candidate.extract.completed", path=report["outputs"]["transcript_cleaned"]))
+    typer.echo(_("candidate.not_trusted"))
+
+
+@candidate_app.command("normalize", help=_("command.candidate.normalize.help"))
+def candidate_normalize(
+    input_path: Annotated[
+        Path,
+        typer.Option("--input", help=_("option.candidate_normalize_input.help")),
+    ],
+    output_dir: Annotated[
+        Path | None,
+        typer.Option("--output-dir", help=_("option.candidate_output_dir.help")),
+    ] = None,
+    target: Annotated[
+        str,
+        typer.Option("--to", help=_("option.candidate_normalize_target.help")),
+    ] = "zh-Hans",
+    output_name: Annotated[
+        str | None,
+        typer.Option("--output-name", help=_("option.candidate_normalize_output_name.help")),
+    ] = None,
+) -> None:
+    """Create a script-normalized copy of candidate lyrics."""
+
+    if target not in {"zh-Hans", "zh-Hant"}:
+        typer.echo(_("candidate.normalize.invalid_target", target=target), err=True)
+        raise typer.Exit(code=2)
+    try:
+        report = normalize_transcript_script(
+            input_path,
+            output_dir=output_dir,
+            target=target,
+            output_name=output_name,
+        )
+    except ScriptNormalizationError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    typer.echo(_("candidate.normalize.completed", path=report["output"]))
+    typer.echo(_("candidate.normalize.source_preserved"))
 
 
 @models_app.callback()
