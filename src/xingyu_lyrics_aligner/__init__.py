@@ -1,3 +1,3 @@
-"""Xingyu Lyrics Aligner bootstrap package."""
+"""Xingyu Lyrics Aligner package."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "xingyu-lyrics-aligner"
-version = "0.1.0"
-description = "Local-first lyrics forced-alignment toolkit bootstrap."
+version = "0.2.0"
+description = "Local-first lyrics forced-alignment toolkit with SWLRC and candidate lyrics support."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "Apache-2.0" }
@@ -34,6 +34,12 @@ dependencies = [
 alignment = [
   "jieba>=0.42.1,<1",
   "whisperx==3.8.6",
+]
+candidate-lyrics = [
+  "demucs>=4,<5",
+  "faster-whisper>=1,<2",
+  "opencc-python-reimplemented>=0.1.7,<1",
+  "torchcodec>=0.2,<1",
 ]
 dev = [
   "mypy>=1.10,<2",

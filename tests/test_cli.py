@@ -5,6 +5,7 @@ from pathlib import Path
 from pytest import MonkeyPatch
 from typer.testing import CliRunner
 
+from xingyu_lyrics_aligner import __version__
 from xingyu_lyrics_aligner.alignment.models import (
     AlignmentModelPullResult,
     AlignmentModelStatus,
@@ -29,6 +30,33 @@ def test_doctor_smoke() -> None:
     assert "FFmpeg:" in result.stdout
 
 
+def test_version_command_and_option() -> None:
+    command_result = runner.invoke(app, ["version"])
+    option_result = runner.invoke(app, ["--version"])
+
+    assert command_result.exit_code == 0
+    assert f"xingyu-lyrics-aligner {__version__}" in command_result.stdout
+    assert option_result.exit_code == 0
+    assert f"xingyu-lyrics-aligner {__version__}" in option_result.stdout
+
+
+def test_update_dry_run_prints_upgrade_command() -> None:
+    result = runner.invoke(app, ["update", "--candidate-lyrics"])
+
+    assert result.exit_code == 0
+    assert "Current version:" in result.stdout
+    assert "pip install --upgrade" in result.stdout
+    assert "xingyu-lyrics-aligner[candidate-lyrics]" in result.stdout
+    assert "Dry run only" in result.stdout
+
+
+def test_upgrade_alias_dry_run() -> None:
+    result = runner.invoke(app, ["upgrade"])
+
+    assert result.exit_code == 0
+    assert "Upgrade command:" in result.stdout
+
+
 def test_models_list_smoke() -> None:
     result = runner.invoke(app, ["models", "list"])
 
@@ -36,6 +64,91 @@ def test_models_list_smoke() -> None:
     assert "Known model slots" in result.stdout
     assert "forced-aligner" in result.stdout
     assert "metadata only" in result.stdout
+
+
+def test_candidate_extract_cli_smoke_without_model(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    audio = tmp_path / "song.flac"
+    output = tmp_path / "candidate"
+    audio.write_bytes(b"fake")
+
+    def fake_extract(args: object) -> dict[str, object]:
+        values = vars(args)
+        assert values["audio"] == audio
+        assert values["output_dir"] == output
+        assert values["language"] == "zh"
+        assert values["model"] == "tiny"
+        assert values["device"] == "cpu"
+        return {"outputs": {"transcript_cleaned": str(output / "transcript.cleaned.txt")}}
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.cli.extract_candidate_lyrics", fake_extract)
+
+    result = runner.invoke(
+        app,
+        [
+            "candidate",
+            "extract",
+            "--audio",
+            str(audio),
+            "--output-dir",
+            str(output),
+            "--language",
+            "zh",
+            "--model",
+            "tiny",
+            "--device",
+            "cpu",
+            "--skip-separation",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Candidate lyrics written to" in result.stdout
+    assert "not trusted lyrics" in result.stdout
+
+
+def test_candidate_normalize_cli_smoke(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "transcript.cleaned.txt"
+    output = tmp_path / "out"
+    source.write_text("聲聲慢\n", encoding="utf-8")
+
+    def fake_normalize(
+        input_path: Path,
+        *,
+        output_dir: Path | None,
+        target: str,
+        output_name: str | None,
+    ) -> dict[str, object]:
+        assert input_path == source
+        assert output_dir == output
+        assert target == "zh-Hans"
+        assert output_name is None
+        return {"output": str(output / "transcript.cleaned.zh-Hans.txt")}
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.cli.normalize_transcript_script", fake_normalize)
+
+    result = runner.invoke(
+        app,
+        [
+            "candidate",
+            "normalize",
+            "--input",
+            str(source),
+            "--output-dir",
+            str(output),
+            "--to",
+            "zh-Hans",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Script-normalized candidate lyrics written to" in result.stdout
+    assert "not overwritten" in result.stdout
 
 
 def test_models_status_smoke() -> None:

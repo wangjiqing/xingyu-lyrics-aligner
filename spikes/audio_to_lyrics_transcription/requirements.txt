@@ -1,0 +1,4 @@
+demucs
+faster-whisper
+opencc-python-reimplemented
+torchcodec
