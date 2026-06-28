@@ -74,4 +74,7 @@ class ReportDocument(BaseModel):
     character_count_matches: bool
     non_monotonic_line_count: int
     status_counts: dict[str, int]
+    estimated_token_count: int = 0
+    skipped_line_count: int = 0
+    swlrc_warnings: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

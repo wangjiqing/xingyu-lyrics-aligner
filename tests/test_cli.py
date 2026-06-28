@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from pytest import MonkeyPatch
@@ -11,6 +12,7 @@ from xingyu_lyrics_aligner.alignment.models import (
     AlignmentModelStatus,
 )
 from xingyu_lyrics_aligner.alignment.pipeline import AlignRunResult
+from xingyu_lyrics_aligner.alignment.swlrc_exporter import SwlrcExportStats
 from xingyu_lyrics_aligner.cli import app
 from xingyu_lyrics_aligner.schemas.alignment import (
     AlignmentDocument,
@@ -296,6 +298,7 @@ def test_align_help_smoke() -> None:
     assert result.exit_code == 0
     assert "--section-manifest" in result.stdout
     assert "--lrc-offset-ms" in result.stdout
+    assert "--json-result" in result.stdout
 
 
 def test_align_cli_smoke_without_model(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
@@ -305,7 +308,7 @@ def test_align_cli_smoke_without_model(monkeypatch: MonkeyPatch, tmp_path: Path)
     audio.write_bytes(b"fake")
     lyrics.write_text("星语发光\n", encoding="utf-8")
 
-    def fake_run_alignment(request: object) -> AlignRunResult:
+    def fake_align_lyrics(**kwargs: object) -> AlignRunResult:
         source = AlignmentSource(
             audio_name="song.wav",
             alignment_model="fake-model",
@@ -325,9 +328,19 @@ def test_align_cli_smoke_without_model(monkeypatch: MonkeyPatch, tmp_path: Path)
             non_monotonic_line_count=0,
             status_counts={},
         )
-        return AlignRunResult(alignment=alignment, report=report, output_dir=output)
+        return AlignRunResult(
+            alignment=alignment,
+            report=report,
+            output_dir=output,
+            swlrc=SwlrcExportStats(
+                token_count=0,
+                estimated_token_count=0,
+                skipped_line_count=0,
+                warnings=[],
+            ),
+        )
 
-    monkeypatch.setattr("xingyu_lyrics_aligner.commands.align.run_alignment", fake_run_alignment)
+    monkeypatch.setattr("xingyu_lyrics_aligner.commands.align.align_lyrics", fake_align_lyrics)
 
     result = runner.invoke(
         app,
@@ -346,3 +359,93 @@ def test_align_cli_smoke_without_model(monkeypatch: MonkeyPatch, tmp_path: Path)
 
     assert result.exit_code == 0
     assert "Alignment completed" in result.stdout
+    assert "swlrc:" in result.stdout
+
+
+def test_align_json_result_success_is_single_json(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "out"
+    audio = tmp_path / "song.wav"
+    lyrics = tmp_path / "lyrics.txt"
+    audio.write_bytes(b"fake")
+    lyrics.write_text("星语\n", encoding="utf-8")
+
+    def fake_align_lyrics(**kwargs: object) -> AlignRunResult:
+        source = AlignmentSource(
+            audio_name="song.wav",
+            alignment_model="fake-model",
+            requested_device="cpu",
+            actual_alignment_device="cpu",
+        )
+        alignment = AlignmentDocument(language="zh", source=source, lines=[])
+        report = ReportDocument(
+            language="zh",
+            source=source,
+            line_count=2,
+            aligned_or_partial_lines=1,
+            input_alignment_characters=2,
+            timed_character_entries=1,
+            missing_character_timestamps=1,
+            character_count_matches=False,
+            non_monotonic_line_count=0,
+            status_counts={},
+            warnings=["swlrc_skipped_line:1:missing_line_timing"],
+        )
+        return AlignRunResult(
+            alignment=alignment,
+            report=report,
+            output_dir=output,
+            swlrc=SwlrcExportStats(
+                token_count=3,
+                estimated_token_count=1,
+                skipped_line_count=1,
+                warnings=["swlrc_skipped_line:1:missing_line_timing"],
+            ),
+        )
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.commands.align.align_lyrics", fake_align_lyrics)
+
+    result = runner.invoke(
+        app,
+        [
+            "align",
+            "--audio",
+            str(audio),
+            "--lyrics",
+            str(lyrics),
+            "--output-dir",
+            str(output),
+            "--json-result",
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.exit_code == 0
+    assert payload["success"] is True
+    assert payload["files"]["swlrc"] == str(output / "lyrics.swlrc")
+    assert payload["summary"]["coverage"] == 0.5
+    assert result.stderr == ""
+
+
+def test_align_json_result_failure_stdout_is_parseable() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "align",
+            "--audio",
+            "missing-audio.wav",
+            "--lyrics",
+            "missing-lyrics.txt",
+            "--output-dir",
+            "out",
+            "--json-result",
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.exit_code == 2
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "INPUT_NOT_FOUND"
+    assert "Audio file does not exist" in result.stderr

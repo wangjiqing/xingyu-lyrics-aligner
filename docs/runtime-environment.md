@@ -162,11 +162,12 @@ The user chooses the output directory:
 xingyu-align align --output-dir "/path/to/output"
 ```
 
-v0.1.1 writes:
+v0.2.0 writes:
 
 ```text
 alignment.json
 lyrics.lrc
+lyrics.swlrc
 report.json
 ```
 

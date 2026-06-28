@@ -100,6 +100,8 @@ def test_global_and_sectional_pipeline_outputs_share_schema(
     assert "foreground_voice_switch" in sectional_result.alignment.lines[1].warnings
     assert (tmp_path / "global" / "alignment.json").exists()
     assert (tmp_path / "sectional" / "lyrics.lrc").exists()
+    assert (tmp_path / "global" / "lyrics.swlrc").exists()
+    assert sectional_result.files["swlrc"] == tmp_path / "sectional" / "lyrics.swlrc"
 
 
 def test_pipeline_overwrite_protection_and_debug_output(
@@ -120,7 +122,7 @@ def test_pipeline_overwrite_protection_and_debug_output(
     audio.write_bytes(b"fake")
     lyrics.write_text("星语\n", encoding="utf-8")
     output.mkdir()
-    (output / "alignment.json").write_text("exists", encoding="utf-8")
+    (output / "lyrics.swlrc").write_text("exists", encoding="utf-8")
 
     request = AlignRequest(
         audio=audio,
@@ -133,6 +135,7 @@ def test_pipeline_overwrite_protection_and_debug_output(
     try:
         run_alignment(request)
     except FileExistsError as exc:
+        assert "lyrics.swlrc" in str(exc)
         assert "Use --overwrite" in str(exc)
     else:
         raise AssertionError("Expected overwrite protection")
@@ -150,4 +153,5 @@ def test_pipeline_overwrite_protection_and_debug_output(
     )
 
     assert result.report.line_count == 1
+    assert result.report.estimated_token_count == 2
     assert (output / "debug.summary.json").exists()

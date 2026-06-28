@@ -20,7 +20,7 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
 - Run WhisperX CTC forced alignment without ASR transcription.
-- Export `alignment.json`, `lyrics.lrc`, and `report.json`.
+- Export `alignment.json`, `lyrics.lrc`, `lyrics.swlrc`, and `report.json`.
 - Optionally use a manual section manifest for structure-aware alignment.
 - Define and validate SWLRC v1, an enhanced character-/word-level timed lyrics
   format for Xingyu Audio Library and Xingyu Music Box.
@@ -40,6 +40,9 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 - Windows CUDA is not covered by the macOS installer.
 - LRC display timing can vary by player because each player decides how to render
   line transitions.
+- SWLRC token timing quality depends on the upstream alignment result. Missing
+  token timings may be estimated from the containing line, and untimed lines are
+  skipped with warnings in `report.json`.
 - Complex spoken parts, overlapping foreground voices, and manual section
   boundaries still need review. Watch for `foreground_voice_switch` and
   `section_boundary_review` warnings.
@@ -164,6 +167,15 @@ xingyu-align align \
   --language zh
 ```
 
+By default this writes:
+
+```text
+alignment.json
+lyrics.lrc
+lyrics.swlrc
+report.json
+```
+
 With a manual section manifest:
 
 ```bash
@@ -177,6 +189,23 @@ xingyu-align align \
 
 Write real outputs outside the repository or under ignored directories such as
 `local_output/`.
+
+For a machine-readable local invocation, use `--json-result`. stdout will contain
+one JSON object; human-facing messages and errors are written to stderr.
+
+```bash
+xingyu-align align \
+  --audio "/music/song.flac" \
+  --lyrics "/workspace/song.lrc" \
+  --output-dir "/workspace/alignment-result" \
+  --language zh \
+  --device cpu \
+  --json-result
+```
+
+The success payload includes `success`, `output_dir`, `files`, `summary`, and
+`warnings`. On failure the process exits non-zero and stdout still contains a
+parseable JSON object with `success: false` and an `error` object.
 
 ## Candidate Lyrics Command
 
@@ -224,8 +253,12 @@ preparation. They are not trusted lyrics.
   preserves trusted lyric display text and token timestamps.
 - `lyrics.lrc`: standard line-level LRC export. `--lrc-offset-ms` only affects
   this file.
+- `lyrics.swlrc`: SWLRC v1 export for character-/word-level highlighting. It
+  uses absolute times and always writes `[swlrc:1]`, `[offset:0]`, and
+  `[tokenization:...]`. `--lrc-offset-ms` is not applied to SWLRC.
 - `report.json`: compact statistics, warnings, model, and device information. It
-  does not copy the full lyrics.
+  does not copy the full lyrics. SWLRC export warnings and estimated/skipped
+  counts are included here.
 
 ## SWLRC
 
@@ -234,6 +267,34 @@ defined and emitted by Xingyu Lyrics Aligner for Xingyu Audio Library and Xingyu
 Music Box. The v1 specification lives in
 [docs/specs/swlrc-v1.md](docs/specs/swlrc-v1.md), with readable examples under
 [docs/examples](docs/examples).
+
+Chinese output defaults to `tokenization:char`; Chinese word tokens from the
+alignment result are split into character tokens for playback highlighting. For
+English and other non-Chinese lyrics, existing word-level tokens are preserved
+when present. If token times are missing but the line has a valid time range,
+the exporter estimates token ranges inside that line and records the count. If a
+line has no valid time range, it is skipped rather than fabricating legal times.
+
+## Python API
+
+```python
+from xingyu_lyrics_aligner import align_lyrics
+
+result = align_lyrics(
+    audio_path="/music/song.flac",
+    lyrics_path="/workspace/song.lrc",
+    output_dir="/workspace/alignment-result",
+    language="zh",
+    device="cpu",
+)
+
+print(result.files["swlrc"])
+```
+
+The returned object contains structured documents, output paths, and SWLRC
+export statistics. Xingyu Audio Library should prefer the CLI with
+`--json-result` for phase-one process isolation, and can later call this API
+directly without importing internal modules.
 
 ## Candidate Lyrics
 

@@ -408,7 +408,32 @@ SWLRC
 -> 无歌词
 ```
 
-## 13. 最小合法示例
+## 13. Xingyu Lyrics Aligner 导出约定
+
+`xingyu-align align` 默认输出 `lyrics.swlrc`，与 `alignment.json`、`lyrics.lrc` 和
+`report.json` 并存。
+
+导出约定：
+
+- 默认写入 `[swlrc:1]`、`[offset:0]` 和 `[tokenization:...]`；
+- SWLRC 使用绝对时间；
+- `--lrc-offset-ms` 只作用于 `lyrics.lrc`，不会隐式作用于 `lyrics.swlrc`；
+- 中文歌词默认输出 `tokenization:char`；
+- 如果上游对齐结果中中文为词级 token，导出时会拆为字符 token，便于音乐盒逐字高亮；
+- 英文和其他非中文歌词在已有词级时间时保留词级 token；
+- mixed 内容可使用 `tokenization:mixed`，读取端不应假设所有 token 粒度一致。
+
+不完整时间戳处理：
+
+1. token 有完整 `start/end`：直接导出；
+2. token 缺失时间，但行有完整 `start/end`：在可恢复的相邻 token 或行范围内均分估算；
+3. 行级时间也不完整：跳过该行，不伪造合法 SWLRC 时间。
+
+导出器会把估算 token 数、跳过行数和 SWLRC warning 写入 `report.json`。因此 `.swlrc`
+可直接供星语音乐盒高亮和滚动使用，但不代表所有 token 都是模型直接给出的精确逐字时间；
+质量仍取决于上游对齐结果。
+
+## 14. 最小合法示例
 
 ```swlrc
 [swlrc:1]
@@ -420,7 +445,7 @@ SWLRC
 <00:10.600,00:11.000>吗
 ```
 
-## 14. 设计原则
+## 15. 设计原则
 
 SWLRC v1 的目标是：
 

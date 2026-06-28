@@ -7,9 +7,10 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from xingyu_lyrics_aligner.formats.swlrc import SwlrcDocument, serialize_swlrc
 from xingyu_lyrics_aligner.schemas.alignment import AlignmentDocument, AlignmentLine, ReportDocument
 
-OUTPUT_FILES = ("alignment.json", "lyrics.lrc", "report.json")
+OUTPUT_FILES = ("alignment.json", "lyrics.lrc", "lyrics.swlrc", "report.json")
 
 
 def format_lrc_time(seconds: float) -> str:
@@ -54,12 +55,19 @@ def write_outputs(
     report: ReportDocument,
     *,
     lrc_offset_ms: int,
+    swlrc_text: str,
 ) -> None:
-    """Write the official v0.1.1 output files."""
+    """Write the official alignment output files."""
     output_dir.mkdir(parents=True, exist_ok=True)
     write_json(output_dir / "alignment.json", alignment)
     (output_dir / "lyrics.lrc").write_text(
         render_lrc(alignment.lines, offset_ms=lrc_offset_ms),
         encoding="utf-8",
     )
+    (output_dir / "lyrics.swlrc").write_text(swlrc_text, encoding="utf-8")
     write_json(output_dir / "report.json", report)
+
+
+def render_swlrc_text(swlrc_document: SwlrcDocument) -> str:
+    """Serialize SWLRC through the format module's validator-backed serializer."""
+    return serialize_swlrc(swlrc_document)

@@ -9,7 +9,11 @@ from pathlib import Path
 from xingyu_lyrics_aligner.alignment.audio import load_audio
 from xingyu_lyrics_aligner.alignment.backmap import CharacterTiming, backfill_lines
 from xingyu_lyrics_aligner.alignment.ctc import CtcSegment, WhisperXCtcAligner
-from xingyu_lyrics_aligner.alignment.exporters import ensure_output_paths, write_outputs
+from xingyu_lyrics_aligner.alignment.exporters import (
+    ensure_output_paths,
+    render_swlrc_text,
+    write_outputs,
+)
 from xingyu_lyrics_aligner.alignment.quality import (
     count_non_monotonic,
     input_character_count,
@@ -21,6 +25,7 @@ from xingyu_lyrics_aligner.alignment.sections import (
     load_section_manifest,
     validate_sections,
 )
+from xingyu_lyrics_aligner.alignment.swlrc_exporter import SwlrcExportStats, build_swlrc_document
 from xingyu_lyrics_aligner.alignment.text import LineSpec, build_line_specs, read_lyrics
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.schemas.alignment import (
@@ -55,6 +60,17 @@ class AlignRunResult:
     alignment: AlignmentDocument
     report: ReportDocument
     output_dir: Path
+    swlrc: SwlrcExportStats
+
+    @property
+    def files(self) -> dict[str, Path]:
+        """Stable file contract for local CLI integrations."""
+        return {
+            "alignment_json": self.output_dir / "alignment.json",
+            "lrc": self.output_dir / "lyrics.lrc",
+            "swlrc": self.output_dir / "lyrics.swlrc",
+            "report": self.output_dir / "report.json",
+        }
 
 
 def run_alignment(request: AlignRequest) -> AlignRunResult:
@@ -117,19 +133,24 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         lines=all_lines,
         warnings=dedupe_warnings(warnings),
     )
+    swlrc_result = build_swlrc_document(alignment)
     report = build_report(
         language=request.language,
         source=source,
         line_specs=line_specs,
         char_entries=all_chars,
         lines=all_lines,
-        warnings=alignment.warnings,
+        warnings=dedupe_warnings(alignment.warnings + swlrc_result.stats.warnings),
+        estimated_token_count=swlrc_result.stats.estimated_token_count,
+        skipped_line_count=swlrc_result.stats.skipped_line_count,
+        swlrc_warnings=swlrc_result.stats.warnings,
     )
     write_outputs(
         request.output_dir,
         alignment,
         report,
         lrc_offset_ms=request.lrc_offset_ms,
+        swlrc_text=render_swlrc_text(swlrc_result.document),
     )
     if request.debug_output:
         write_debug_summary(
@@ -137,7 +158,12 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
             sections=sections,
             character_entries=all_chars,
         )
-    return AlignRunResult(alignment=alignment, report=report, output_dir=request.output_dir)
+    return AlignRunResult(
+        alignment=alignment,
+        report=report,
+        output_dir=request.output_dir,
+        swlrc=swlrc_result.stats,
+    )
 
 
 def validate_request(request: AlignRequest) -> None:
@@ -187,14 +213,15 @@ def build_report(
     char_entries: list[CharacterTiming],
     lines: list[AlignmentLine],
     warnings: list[str],
+    estimated_token_count: int = 0,
+    skipped_line_count: int = 0,
+    swlrc_warnings: list[str] | None = None,
 ) -> ReportDocument:
     """Build compact statistics without copying full lyric text."""
     input_chars = input_character_count(line_specs)
     timed_chars = timed_character_count(char_entries)
     aligned_or_partial = sum(
-        1
-        for line in lines
-        if line.status in {AlignmentStatus.ALIGNED, AlignmentStatus.PARTIAL}
+        1 for line in lines if line.status in {AlignmentStatus.ALIGNED, AlignmentStatus.PARTIAL}
     )
     return ReportDocument(
         language=language,
@@ -207,6 +234,9 @@ def build_report(
         character_count_matches=input_chars == len(char_entries),
         non_monotonic_line_count=count_non_monotonic(lines),
         status_counts=status_counts(lines),
+        estimated_token_count=estimated_token_count,
+        skipped_line_count=skipped_line_count,
+        swlrc_warnings=swlrc_warnings or [],
         warnings=warnings,
     )
 

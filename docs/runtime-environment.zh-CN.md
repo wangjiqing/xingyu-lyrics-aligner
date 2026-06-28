@@ -154,11 +154,12 @@ GitHub 安装模式下，launcher 指向：
 xingyu-align align --output-dir "/path/to/output"
 ```
 
-v0.1.1 会写入：
+v0.2.0 会写入：
 
 ```text
 alignment.json
 lyrics.lrc
+lyrics.swlrc
 report.json
 ```
 
