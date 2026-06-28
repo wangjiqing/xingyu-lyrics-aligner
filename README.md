@@ -2,9 +2,11 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.2.0
-aligns a local audio file against user-provided lyric lines, defines SWLRC v1,
-and adds optional ASR candidate-lyrics extraction for manual review.
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.3.0
+aligns local audio against user-provided lyric lines, defines SWLRC v1, keeps
+optional ASR candidate-lyrics extraction for manual review, and adds an official
+CPU Docker image plus an optional shared-directory Worker for Docker Compose
+integrations.
 
 The recommended user command is:
 
@@ -15,13 +17,16 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.2.0 Can Do
+## What v0.3.0 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
 - Run WhisperX CTC forced alignment without ASR transcription.
 - Export `alignment.json`, `lyrics.lrc`, `lyrics.swlrc`, and `report.json`.
 - Optionally use a manual section manifest for structure-aware alignment.
+- Run the same CLI inside the official CPU Docker image.
+- Optionally run `xingyu-align worker run` against a mounted `/jobs` directory
+  for Xingyu Audio Library Docker Compose deployments.
 - Define and validate SWLRC v1, an enhanced character-/word-level timed lyrics
   format for Xingyu Audio Library and Xingyu Music Box.
 - Optionally extract ASR candidate lyrics from audio through Demucs vocals
@@ -35,7 +40,10 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
   workflow and is not part of trusted alignment by default.
 - The CLI does not fetch public lyrics, rewrite user lyrics, or upload audio.
 - Demucs is used only by the optional candidate-lyrics workflow. UVR, GUI,
-  database, and Web services are out of scope for v0.2.0.
+  database, HTTP services, message queues, and Docker socket access are out of
+  scope for v0.3.0.
+- The default CLI path does not start a long-running process. The Docker Worker
+  is an optional deployment adapter for shared-directory integrations.
 - macOS MPS may fall back to CPU for WhisperX alignment.
 - Windows CUDA is not covered by the macOS installer.
 - LRC display timing can vary by player because each player decides how to render
@@ -61,16 +69,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-Install directly from the GitHub v0.2.0 tag:
+Install directly from the GitHub v0.3.0 tag:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.3.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.3.0
 ```
 
 Include optional candidate-lyrics dependencies:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.3.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.3.0 --candidate-lyrics
 ```
 
 To choose and save the default CLI language during install:
@@ -115,7 +123,7 @@ Update from GitHub:
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.2.0 --run
+xingyu-align update --candidate-lyrics --ref v0.3.0 --run
 ```
 
 ## Manual Development Install
@@ -206,6 +214,88 @@ xingyu-align align \
 The success payload includes `success`, `output_dir`, `files`, `summary`, and
 `warnings`. On failure the process exits non-zero and stdout still contains a
 parseable JSON object with `success: false` and an `error` object.
+
+## Docker CLI
+
+The official CPU image is published at:
+
+```text
+ghcr.io/wangjiqing/xingyu-lyrics-aligner
+docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
+```
+
+GHCR is the primary example registry in this README. Release tags are mirrored to
+Docker Hub with the same version tags: `0.3.0`, `0.3`, `latest`, and `v0.3.0`.
+
+Run doctor:
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align doctor
+```
+
+Preheat the Chinese alignment model into the mounted cache:
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align models pull --language zh --device cpu
+```
+
+Run one alignment:
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align align \
+    --audio /music/song.flac \
+    --lyrics /jobs/job-001/trusted-lyrics.txt \
+    --output-dir /jobs/job-001/result \
+    --language zh \
+    --device cpu \
+    --json-result
+```
+
+The image runs as non-root UID/GID `10001:10001`. Mount `/music` read-only, keep
+`/jobs` and `/models` writable, and persist `/models` to avoid re-downloading
+model files. The image does not download models at build time.
+
+```bash
+mkdir -p alignment-jobs aligner-model-cache
+sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
+```
+
+## Docker Worker
+
+For Xingyu Audio Library Docker Compose deployments, the optional Worker can poll
+a shared jobs directory:
+
+```bash
+xingyu-align worker run --jobs-dir /jobs --device cpu
+```
+
+Each job directory contains `request.json`, `trusted-lyrics.txt`, optional
+`sections.json`, and a `READY` marker. The Worker claims jobs by exclusively
+creating `RUNNING`, then removing `READY`; writes `status.json` via temp file
+plus atomic rename; keeps per-attempt stderr logs; and verifies
+`alignment.json`, `lyrics.lrc`, `lyrics.swlrc`, and `report.json` before writing
+success. Status values are `SUCCEEDED`, `NEEDS_REVIEW`, `FAILED`, and
+`ABANDONED` for stale `RUNNING` jobs.
+
+The Worker only reads `/music` paths and writes `/jobs` paths. It is not an HTTP
+service, opens no ports, uses no database or message queue, and does not mount
+`/var/run/docker.sock`. See [Docker Worker](docs/docker-worker.md) and
+[deploy/docker-compose.worker.example.yml](deploy/docker-compose.worker.example.yml).
 
 ## Candidate Lyrics Command
 
@@ -367,8 +457,10 @@ timelines, model caches, stems, or `local_output/`.
 
 ```bash
 ruff check .
+mypy
 pytest
 bash -n scripts/install-macos.sh
+docker build -t xingyu-lyrics-aligner:local .
 ```
 
 ## License

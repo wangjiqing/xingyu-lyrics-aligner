@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "xingyu-lyrics-aligner"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first lyrics forced-alignment toolkit with SWLRC and candidate lyrics support."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -70,7 +70,11 @@ line-ending = "lf"
 python_version = "3.11"
 strict = true
 warn_unused_configs = true
-files = ["src", "tests"]
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["faster_whisper", "jieba", "whisperx"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

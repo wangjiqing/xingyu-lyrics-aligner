@@ -5,7 +5,7 @@ FORCE=0
 LOCALE=""
 CANDIDATE_LYRICS=0
 SOURCE="auto"
-REF="v0.2.0"
+REF="v0.3.0"
 GITHUB_REPO_URL="https://github.com/wangjiqing/xingyu-lyrics-aligner.git"
 while [[ $# -gt 0 ]]; do
   arg="$1"
@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ref)
       if [[ $# -lt 2 ]]; then
-        echo "--ref requires a Git ref such as main or v0.2.0." >&2
+        echo "--ref requires a Git ref such as main or v0.3.0." >&2
         exit 2
       fi
       REF="$2"
@@ -48,13 +48,13 @@ Install xingyu-align from a local source checkout on macOS.
 
 Usage:
   ./scripts/install-macos.sh [--force] [--locale en-US|zh-CN] [--candidate-lyrics]
-  ./scripts/install-macos.sh --source github [--ref v0.2.0] [--candidate-lyrics]
+  ./scripts/install-macos.sh --source github [--ref v0.3.0] [--candidate-lyrics]
 
 This script does not install Homebrew, does not modify shell config, and does not
 download alignment models. Run `xingyu-align models pull --language zh` after install.
 
 GitHub one-liner:
-  curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0
+  curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.3.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.3.0
 USAGE
       exit 0
       ;;

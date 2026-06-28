@@ -1,0 +1,24 @@
+# Host directory bootstrap for the default non-root container user:
+#
+#   mkdir -p alignment-jobs aligner-model-cache
+#   sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
+#
+# Keep MUSIC_DIR read-only. ALIGNMENT_JOBS_DIR and ALIGNER_MODEL_CACHE_DIR must
+# be writable by UID/GID 10001, or set a compatible service-level user: value.
+
+services:
+  xingyu-lyrics-aligner-worker:
+    image: ghcr.io/wangjiqing/xingyu-lyrics-aligner:${ALIGNER_IMAGE_TAG:-0.3.0}
+    command:
+      - xingyu-align
+      - worker
+      - run
+      - --jobs-dir
+      - /jobs
+      - --device
+      - cpu
+    restart: unless-stopped
+    volumes:
+      - ${MUSIC_DIR}:/music:ro
+      - ${ALIGNMENT_JOBS_DIR}:/jobs
+      - ${ALIGNER_MODEL_CACHE_DIR}:/models

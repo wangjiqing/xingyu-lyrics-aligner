@@ -120,6 +120,10 @@ def align_command(
 
 
 def _json_result_payload(result: AlignRunResult) -> dict[str, object]:
+    return align_json_result_payload(result)
+
+
+def align_json_result_payload(result: AlignRunResult) -> dict[str, object]:
     line_count = result.report.line_count
     aligned_line_count = result.report.aligned_or_partial_lines
     return {
@@ -139,6 +143,10 @@ def _json_result_payload(result: AlignRunResult) -> dict[str, object]:
 
 
 def _error_code(exc: Exception) -> str:
+    return align_error_code(exc)
+
+
+def align_error_code(exc: Exception) -> str:
     if isinstance(exc, FileExistsError):
         return "OUTPUT_EXISTS"
     if isinstance(exc, FileNotFoundError):

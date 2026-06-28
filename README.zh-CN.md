@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.2.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，并增加可选的 ASR 候选歌词提取能力，供人工复核使用。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.3.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并新增官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。
 
 普通用户推荐使用：
 
@@ -12,13 +12,15 @@ xingyu-align
 
 `xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-## v0.2.0 能做什么
+## v0.3.0 能做什么
 
 - 读取本地音频文件和逐行可信歌词文本。
 - 构建中文 CTC alignment text，但不改写 display lyrics。
 - 使用 WhisperX CTC forced alignment，不运行 ASR 听写。
 - 导出 `alignment.json`、`lyrics.lrc`、`lyrics.swlrc`、`report.json`。
 - 可选使用手工 section manifest 做结构化分段对齐。
+- 在官方 CPU Docker 镜像中运行同一套 `xingyu-align` CLI。
+- 可选运行 `xingyu-align worker run`，通过共享 `/jobs` 目录服务星语音库 Docker Compose 部署。
 - 定义并校验 SWLRC v1：面向星语音库与星语音乐盒的增强逐字 / 逐词歌词格式。
 - 可选通过 Demucs 人声分离与 faster-whisper 从音频提取 ASR 候选歌词，仅供人工复核。
 - 可额外生成简体或繁体候选歌词副本，不覆盖原始 ASR 输出。
@@ -27,7 +29,8 @@ xingyu-align
 
 - ASR transcription 只存在于显式的 `candidate extract` 工作流中，不属于可信歌词对齐默认主路径。
 - 不联网匹配歌词，不改写用户歌词，不上传音频。
-- Demucs 只用于可选的候选歌词流程。v0.2.0 不包含 UVR、GUI、数据库或 Web 服务。
+- Demucs 只用于可选的候选歌词流程。v0.3.0 不包含 UVR、GUI、数据库、HTTP 服务、消息队列或 Docker Socket 访问。
+- 默认 CLI 路径不引入常驻进程；Docker Worker 是面向音库集成的可选部署模式。
 - macOS 上请求 MPS 时，WhisperX alignment 可能回退 CPU。
 - macOS 安装脚本不承诺 Windows CUDA。
 - LRC 行级展示可能受播放器实现影响，不同播放器对行间滚动的处理可能不同。
@@ -48,16 +51,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-也可以直接从 GitHub v0.2.0 tag 安装：
+也可以直接从 GitHub v0.3.0 tag 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.3.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.3.0
 ```
 
 包含候选歌词可选依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.2.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.2.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.3.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.3.0 --candidate-lyrics
 ```
 
 安装时选择并保存默认 CLI 语言：
@@ -105,7 +108,7 @@ xingyu-align config show
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.2.0 --run
+xingyu-align update --candidate-lyrics --ref v0.3.0 --run
 ```
 
 ## 手动开发安装
@@ -193,6 +196,83 @@ xingyu-align align \
 
 成功 JSON 包含 `success`、`output_dir`、`files`、`summary` 和 `warnings`。失败时进程返回
 非 0，stdout 仍尽量输出可解析 JSON，其中包含 `success: false` 和 `error`。
+
+## Docker CLI
+
+官方 CPU 镜像发布在：
+
+```text
+ghcr.io/wangjiqing/xingyu-lyrics-aligner
+docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
+```
+
+本文默认示例使用 GHCR。发布 workflow 会把同一组版本标签同步推送到 Docker Hub：
+`0.3.0`、`0.3`、`latest` 和 `v0.3.0`。
+
+运行 doctor：
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align doctor
+```
+
+预热中文对齐模型：
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align models pull --language zh --device cpu
+```
+
+单次对齐：
+
+```bash
+docker run --rm \
+  -v /host/music:/music:ro \
+  -v /host/jobs:/jobs \
+  -v /host/models:/models \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align align \
+    --audio /music/song.flac \
+    --lyrics /jobs/job-001/trusted-lyrics.txt \
+    --output-dir /jobs/job-001/result \
+    --language zh \
+    --device cpu \
+    --json-result
+```
+
+镜像以非 root 的 UID/GID `10001:10001` 运行。`/music` 应只读挂载，`/jobs` 与
+`/models` 需要可写，`/models` 建议持久化以复用模型缓存。镜像构建阶段不会下载模型。
+
+```bash
+mkdir -p alignment-jobs aligner-model-cache
+sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
+```
+
+## Docker Worker
+
+星语音库 Docker Compose 部署可启用可选 Worker：
+
+```bash
+xingyu-align worker run --jobs-dir /jobs --device cpu
+```
+
+每个任务目录包含 `request.json`、`trusted-lyrics.txt`、可选 `sections.json` 和
+`READY` marker。Worker 通过排他创建 `RUNNING` 后移除 `READY` 来领取任务；`status.json`
+使用临时文件加原子 rename 写入；stderr 按 attempt 保留；写入成功状态前会校验
+`alignment.json`、`lyrics.lrc`、`lyrics.swlrc` 与 `report.json` 均已存在。状态包括
+`SUCCEEDED`、`NEEDS_REVIEW`、`FAILED`，遗留 `RUNNING` 超时后会标记为 `ABANDONED`。
+
+Worker 只允许读取 `/music` 下的音频路径，只允许读写 `/jobs` 下的歌词、section 和输出路径。它不是 HTTP 服务，不暴露端口，不使用数据库、消息队列或 `/var/run/docker.sock`。详见
+[Docker Worker 协议](docs/docker-worker.md) 和
+[Compose 示例](deploy/docker-compose.worker.example.yml)。
 
 ## 候选歌词命令
 
