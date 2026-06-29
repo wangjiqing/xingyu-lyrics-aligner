@@ -15,7 +15,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, cast
 
 _SUSPECTED_METADATA_RE = re.compile(
     r"^(?:[词詞]曲|作[词詞]|作曲|编曲|編曲|字幕|歌[词詞]|制作|製作|"
@@ -402,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
-    print(f"候选歌词已写入：{report['outputs']['transcript_cleaned']}")
+    outputs = cast(dict[str, object], report["outputs"])
+    print(f"候选歌词已写入：{outputs['transcript_cleaned']}")
     print("这是 ASR 候选歌词，不是可信歌词。")
     return 0

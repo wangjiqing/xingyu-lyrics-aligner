@@ -6,7 +6,7 @@ import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 import typer
 
@@ -27,6 +27,7 @@ from xingyu_lyrics_aligner.i18n import configure_locale, normalize_locale
 from xingyu_lyrics_aligner.i18n import translate as _
 from xingyu_lyrics_aligner.model_registry import known_model_slots
 from xingyu_lyrics_aligner.user_config import UserConfig, load_user_config, save_user_config
+from xingyu_lyrics_aligner.worker import run_worker
 
 HELP_CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
@@ -54,9 +55,15 @@ candidate_app = typer.Typer(
     no_args_is_help=True,
     context_settings=HELP_CONTEXT_SETTINGS,
 )
+worker_app = typer.Typer(
+    help=_("command.worker.help"),
+    no_args_is_help=True,
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 app.add_typer(models_app, name="models")
 app.add_typer(config_app, name="config")
 app.add_typer(candidate_app, name="candidate")
+app.add_typer(worker_app, name="worker")
 
 MODEL_DISPLAY_KEYS = {
     "forced-aligner": "models.slot.aligner",
@@ -279,8 +286,13 @@ def candidate_extract(
     except CandidateLyricsError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
-    typer.echo(_("candidate.extract.completed", path=report["outputs"]["transcript_cleaned"]))
+    typer.echo(_("candidate.extract.completed", path=_candidate_cleaned_output(report)))
     typer.echo(_("candidate.not_trusted"))
+
+
+def _candidate_cleaned_output(report: dict[str, object]) -> str:
+    outputs = cast(dict[str, object], report["outputs"])
+    return str(outputs["transcript_cleaned"])
 
 
 @candidate_app.command(
@@ -406,6 +418,62 @@ def models_pull(
     typer.echo(f"actual_alignment_device: {result.actual_device}")
     for warning in result.warnings:
         typer.echo(f"warning: {warning}")
+
+
+@worker_app.command(
+    "run",
+    help=_("command.worker.run.help"),
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
+def worker_run(
+    jobs_dir: Annotated[
+        Path,
+        typer.Option("--jobs-dir", help=_("option.worker_jobs_dir.help")),
+    ] = Path("/jobs"),
+    music_dir: Annotated[
+        Path,
+        typer.Option("--music-dir", help=_("option.worker_music_dir.help")),
+    ] = Path("/music"),
+    poll_interval_seconds: Annotated[
+        float,
+        typer.Option("--poll-interval-seconds", help=_("option.worker_poll_interval.help")),
+    ] = 3.0,
+    device: Annotated[
+        DeviceStrategy,
+        typer.Option("--device", help=_("option.device.help")),
+    ] = DeviceStrategy.CPU,
+    once: Annotated[
+        bool,
+        typer.Option("--once", help=_("option.worker_once.help")),
+    ] = False,
+    min_coverage: Annotated[
+        float,
+        typer.Option("--min-coverage", help=_("option.worker_min_coverage.help")),
+    ] = 0.95,
+    estimated_token_review_threshold: Annotated[
+        int,
+        typer.Option(
+            "--estimated-token-review-threshold",
+            help=_("option.worker_estimated_token_threshold.help"),
+        ),
+    ] = 0,
+    running_timeout_seconds: Annotated[
+        int,
+        typer.Option("--running-timeout-seconds", help=_("option.worker_running_timeout.help")),
+    ] = 3600,
+) -> None:
+    """Run the optional shared-directory worker."""
+
+    run_worker(
+        jobs_dir=jobs_dir,
+        music_dir=music_dir,
+        poll_interval_seconds=poll_interval_seconds,
+        device=device,
+        once=once,
+        min_coverage=min_coverage,
+        estimated_token_review_threshold=estimated_token_review_threshold,
+        running_timeout_seconds=running_timeout_seconds,
+    )
 
 
 app.command(

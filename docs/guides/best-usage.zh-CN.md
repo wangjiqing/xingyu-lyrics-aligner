@@ -3,9 +3,11 @@
 这份 README 面向两类场景：
 
 - 人工为单首歌生成对齐结果；
-- 星语音库通过本地命令批量调用对齐器。
+- 星语音库通过本地命令或 Docker Compose Worker 批量调用对齐器。
 
-推荐的一期方案是本地 CLI 调用，不引入 HTTP 服务、数据库、消息队列或常驻进程。
+默认推荐路径仍是本地 CLI 调用，不引入常驻进程。Docker Worker 是面向星语音库
+Docker Compose 部署的可选执行器；它不引入 HTTP 服务、数据库、消息队列或 Docker
+Socket。
 
 ## 总体原则
 
@@ -14,6 +16,8 @@
 - 默认输出 `alignment.json`、`lyrics.lrc`、`lyrics.swlrc`、`report.json`。
 - 星语音乐盒优先读取 `lyrics.swlrc`，没有 SWLRC 时再回退到 LRC。
 - `--lrc-offset-ms` 只影响 `lyrics.lrc`，不影响 `lyrics.swlrc`。
+- 单曲人工使用优先直接运行 CLI；星语音库 Docker 部署可启用共享目录 Worker。
+- 不启用 Worker 时，对齐器不会增加后台进程。
 - 真实音频、真实歌词和生成产物不要提交到 Git。
 
 ## 首次准备
@@ -133,6 +137,91 @@ xingyu-align align \
 - 将 `summary` 和 `warnings` 存入导入日志；
 - 若 `skipped_line_count > 0` 或 `coverage` 明显偏低，标记为需要人工复核；
 - 不依赖 stdout 中的人类提示，因为 `--json-result` 模式下 stdout 预留给 JSON。
+
+## 星语音库 Docker Compose Worker
+
+Docker 部署时可以让音库只写共享任务目录，由 Worker 容器领取任务。Compose 片段：
+
+```yaml
+services:
+  xingyu-lyrics-aligner-worker:
+    image: ghcr.io/wangjiqing/xingyu-lyrics-aligner:${ALIGNER_IMAGE_TAG:-0.3.0}
+    command:
+      - xingyu-align
+      - worker
+      - run
+      - --jobs-dir
+      - /jobs
+      - --device
+      - cpu
+    restart: unless-stopped
+    volumes:
+      - ${MUSIC_DIR}:/music:ro
+      - ${ALIGNMENT_JOBS_DIR}:/jobs
+      - ${ALIGNER_MODEL_CACHE_DIR}:/models
+```
+
+不要挂载 `/var/run/docker.sock`，不要使用 `privileged: true`。音频目录只读，任务目录和模型缓存目录分开。容器默认以 UID/GID `10001:10001` 运行，宿主机上的
+`${ALIGNMENT_JOBS_DIR}` 与 `${ALIGNER_MODEL_CACHE_DIR}` 需要允许该用户写入，或在 Compose
+里显式设置兼容的 `user:`。
+
+```bash
+mkdir -p alignment-jobs aligner-model-cache
+sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
+```
+
+首次使用前预热模型：
+
+```bash
+docker run --rm \
+  -v "${MUSIC_DIR}:/music:ro" \
+  -v "${ALIGNMENT_JOBS_DIR}:/jobs" \
+  -v "${ALIGNER_MODEL_CACHE_DIR}:/models" \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.3.0 \
+  xingyu-align models pull --language zh --device cpu
+```
+
+Worker 任务目录：
+
+```text
+/jobs/job-001/
+  request.json
+  trusted-lyrics.txt
+  sections.json
+  READY
+  status.json
+  stderr.log
+  result/
+    alignment.json
+    lyrics.lrc
+    lyrics.swlrc
+    report.json
+```
+
+`request.json` 示例：
+
+```json
+{
+  "schemaVersion": 1,
+  "jobId": "job-001",
+  "audioPath": "/music/artist/song.flac",
+  "lyricsPath": "/jobs/job-001/trusted-lyrics.txt",
+  "outputDir": "/jobs/job-001/result",
+  "language": "zh",
+  "device": "cpu",
+  "sectionManifestPath": null,
+  "createdAt": "2026-06-28T00:00:00Z"
+}
+```
+
+路径限制是机器契约：`audioPath` 必须在 `/music` 下；歌词、section manifest 和输出目录必须在 `/jobs` 下。Worker 通过排他创建
+`RUNNING` 后移除 `READY` 领取任务；`status.json` 用临时文件加原子 rename 写入；写入成功状态前会校验 `alignment.json`、`lyrics.lrc`、`lyrics.swlrc` 和
+`report.json` 均存在。失败 traceback 写入 `attempts/{attemptId}.stderr.log`，`stderr.log`
+是最新 attempt 的便捷副本。最终状态为 `SUCCEEDED`、`NEEDS_REVIEW`、`FAILED` 或
+`ABANDONED`。
+
+CPU 是 v0.3.0 的 Docker 默认支持边界。GPU 后续需要单独验证 PyTorch、WhisperX、CUDA
+runtime 与宿主机驱动，不在本版本假装完整支持。
 
 ## 候选歌词流程
 

@@ -122,7 +122,7 @@ GitHub 安装模式会创建或复用：
 ~/.local/share/xingyu-lyrics-aligner/venv/
 ```
 
-它会从 `main`、`v0.2.0` 等 Git ref 安装。
+它会从 `main`、`v0.3.0` 等 Git ref 安装。
 
 ## 用户级启动器
 
@@ -154,7 +154,7 @@ GitHub 安装模式下，launcher 指向：
 xingyu-align align --output-dir "/path/to/output"
 ```
 
-v0.2.0 会写入：
+v0.3.0 会写入：
 
 ```text
 alignment.json

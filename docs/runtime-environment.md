@@ -129,7 +129,7 @@ GitHub install mode creates or reuses:
 ~/.local/share/xingyu-lyrics-aligner/venv/
 ```
 
-It installs from a Git ref such as `main` or `v0.2.0`.
+It installs from a Git ref such as `main` or `v0.3.0`.
 
 ## User Launcher
 
@@ -162,7 +162,7 @@ The user chooses the output directory:
 xingyu-align align --output-dir "/path/to/output"
 ```
 
-v0.2.0 writes:
+v0.3.0 writes:
 
 ```text
 alignment.json

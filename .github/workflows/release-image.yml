@@ -1,0 +1,118 @@
+name: Release Docker Image
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image version without leading v, for example 0.3.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GHCR_IMAGE: ghcr.io/wangjiqing/xingyu-lyrics-aligner
+  DOCKERHUB_IMAGE: docker.io/${{ vars.DOCKERHUB_USERNAME }}/xingyu-lyrics-aligner
+
+jobs:
+  release-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          minor="$(cut -d. -f1,2 <<<"${version}")"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "minor=${minor}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.DOCKERHUB_IMAGE }}
+          tags: |
+            type=raw,value=v${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.minor }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=Xingyu Lyrics Aligner
+            org.opencontainers.image.description=CPU Docker image for local trusted-lyrics alignment
+            org.opencontainers.image.url=https://github.com/wangjiqing/xingyu-lyrics-aligner
+            org.opencontainers.image.source=https://github.com/wangjiqing/xingyu-lyrics-aligner
+            org.opencontainers.image.documentation=https://github.com/wangjiqing/xingyu-lyrics-aligner/blob/main/docs/docker-worker.md
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Make GHCR package public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method PATCH \
+            /user/packages/container/xingyu-lyrics-aligner/visibility \
+            -f visibility=public
+
+      - name: Pull published image anonymously
+        run: |
+          docker logout ghcr.io || true
+          docker logout || true
+          docker pull "${GHCR_IMAGE}:${{ steps.version.outputs.version }}"
+          docker pull "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}"
+
+      - name: Smoke test published image
+        run: |
+          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align --help
+          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align doctor
+          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align worker run --help
+          test "$(docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" id -u)" != "0"
+          docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align --help
