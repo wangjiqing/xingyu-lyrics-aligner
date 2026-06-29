@@ -226,6 +226,8 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 
 GHCR is the primary example registry in this README. Release tags are mirrored to
 Docker Hub with the same version tags: `0.3.0`, `0.3`, `latest`, and `v0.3.0`.
+Images are published for `linux/amd64` and `linux/arm64`; Apple Silicon Macs pull
+the ARM64 image by default.
 
 Run doctor:
 

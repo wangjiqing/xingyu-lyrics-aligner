@@ -20,6 +20,6 @@
   GHCR public visibility handling.
 - Kept the default macOS CLI and direct Python API path unchanged.
 
-Docker support in v0.3.0 is CPU-first. The release workflow publishes
-`linux/amd64` unless `linux/arm64` is separately verified for the WhisperX /
-PyTorch dependency stack.
+Docker support in v0.3.0 is CPU-first. The release workflow publishes a
+multi-architecture manifest for `linux/amd64` and `linux/arm64`, so Apple
+Silicon Macs pull the ARM64 image by default.

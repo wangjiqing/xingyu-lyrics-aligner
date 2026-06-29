@@ -10,6 +10,9 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 
 The examples below use GHCR:
 
+Release tags are published as a multi-architecture manifest for `linux/amd64`
+and `linux/arm64`. Apple Silicon Macs pull the ARM64 image by default.
+
 On first GHCR publication, GitHub may keep the package private even after a
 successful push. If anonymous `docker pull ghcr.io/...` fails, set the package
 visibility to public in GitHub Packages. Docker Hub is also published with the

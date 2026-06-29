@@ -208,6 +208,8 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 
 本文默认示例使用 GHCR。发布 workflow 会把同一组版本标签同步推送到 Docker Hub：
 `0.3.0`、`0.3`、`latest` 和 `v0.3.0`。
+镜像发布 `linux/amd64` 与 `linux/arm64` 多架构 manifest，Apple Silicon Mac 会默认拉取
+ARM64 镜像。
 
 运行 doctor：
 

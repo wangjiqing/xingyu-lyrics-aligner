@@ -83,7 +83,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -107,6 +107,12 @@ jobs:
         run: |
           docker logout || true
           docker pull "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}"
+
+      - name: Verify Docker Hub manifest platforms
+        run: |
+          docker buildx imagetools inspect "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}"
+          docker buildx imagetools inspect "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" | grep -q "linux/amd64"
+          docker buildx imagetools inspect "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" | grep -q "linux/arm64"
 
       - name: Check GHCR anonymous pull
         continue-on-error: true
