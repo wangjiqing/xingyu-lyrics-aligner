@@ -94,6 +94,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Make GHCR package public
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -102,17 +103,28 @@ jobs:
             /user/packages/container/xingyu-lyrics-aligner/visibility \
             -f visibility=public
 
-      - name: Pull published image anonymously
+      - name: Pull Docker Hub image anonymously
         run: |
-          docker logout ghcr.io || true
           docker logout || true
-          docker pull "${GHCR_IMAGE}:${{ steps.version.outputs.version }}"
           docker pull "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}"
 
-      - name: Smoke test published image
+      - name: Check GHCR anonymous pull
+        continue-on-error: true
         run: |
-          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align --help
-          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align doctor
-          docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align worker run --help
-          test "$(docker run --rm "${GHCR_IMAGE}:${{ steps.version.outputs.version }}" id -u)" != "0"
+          docker logout ghcr.io || true
+          if ! docker pull "${GHCR_IMAGE}:${{ steps.version.outputs.version }}"; then
+            {
+              echo "### GHCR public pull warning"
+              echo
+              echo "The image was pushed to GHCR, but anonymous pull failed."
+              echo "If this is the first GHCR package publish, set the package visibility to public in GitHub Packages and rerun the workflow."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+
+      - name: Smoke test published image from Docker Hub
+        run: |
           docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align --help
+          docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align doctor
+          docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align worker run --help
+          test "$(docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" id -u)" != "0"

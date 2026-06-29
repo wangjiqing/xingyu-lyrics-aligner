@@ -16,8 +16,8 @@
 - Added GitHub Actions CI for Ruff, mypy, pytest, Docker build, and Docker smoke
   tests.
 - Added tag-driven GHCR and Docker Hub image publishing for `0.3.0`, `0.3`,
-  and `latest`, including public GHCR package visibility and anonymous pull
-  verification.
+  and `latest`, including Docker Hub anonymous pull verification and best-effort
+  GHCR public visibility handling.
 - Kept the default macOS CLI and direct Python API path unchanged.
 
 Docker support in v0.3.0 is CPU-first. The release workflow publishes

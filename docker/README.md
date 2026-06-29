@@ -10,6 +10,12 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 
 The examples below use GHCR:
 
+On first GHCR publication, GitHub may keep the package private even after a
+successful push. If anonymous `docker pull ghcr.io/...` fails, set the package
+visibility to public in GitHub Packages. Docker Hub is also published with the
+same version tags and is used as the release workflow's required public pull
+check.
+
 ```bash
 docker run --rm \
   -v /host/music:/music:ro \
