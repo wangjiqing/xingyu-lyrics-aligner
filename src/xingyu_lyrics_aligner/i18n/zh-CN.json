@@ -13,7 +13,7 @@
   "command.config.set_locale.help": "保存默认 CLI 语言。",
   "command.align.help": "使用本地 WhisperX CTC 直接对齐可信逐行歌词。",
   "command.worker.help": "运行可选的共享目录 Docker Worker。",
-  "command.worker.run.help": "轮询 /jobs 中的 READY 对齐请求，并写入 status.json 结果。",
+  "command.worker.run.help": "轮询 /jobs 中的 READY 对齐或歌词草稿提取请求，并写入 status.json 结果。",
   "command.version.help": "显示已安装的 Xingyu Lyrics Aligner 版本。",
   "command.update.help": "打印或执行推荐的包升级命令。",
   "command.candidate.help": "生成和复核 ASR 候选歌词。输出不是可信歌词。",

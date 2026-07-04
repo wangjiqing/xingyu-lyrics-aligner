@@ -30,19 +30,18 @@ COPY src ./src
 COPY docker/entrypoint.sh /usr/local/bin/xingyu-aligner-entrypoint
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && if [ "$TARGETARCH" = "amd64" ]; then \
-        python -m pip install --no-cache-dir \
-          --index-url https://download.pytorch.org/whl/cpu \
-          "torch==2.8.0+cpu" \
-          "torchaudio==2.8.0+cpu" \
-          "torchvision==0.23.0+cpu"; \
-      fi \
-    && python -m pip install --no-cache-dir ".[alignment]" \
+    && python -m pip install --no-cache-dir ".[alignment,candidate-lyrics]" \
+    && python -m pip install --no-cache-dir --force-reinstall --no-deps \
+      --index-url https://download.pytorch.org/whl/cpu \
+      "torch==2.11.0+cpu" \
+      "torchaudio==2.11.0+cpu" \
+      "torchvision==0.26.0+cpu" \
+      "torchcodec==0.14.0+cpu" \
     && chmod +x /usr/local/bin/xingyu-aligner-entrypoint
 
 USER app
 
-VOLUME ["/jobs", "/models"]
+VOLUME ["/jobs", "/models", "/music"]
 
 ENTRYPOINT ["xingyu-aligner-entrypoint"]
 CMD ["xingyu-align", "--help"]

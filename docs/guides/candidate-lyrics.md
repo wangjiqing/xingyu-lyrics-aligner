@@ -1,6 +1,6 @@
-# 候选歌词提取脚本
+# 候选歌词提取
 
-本脚本用于从歌曲音频生成 ASR 候选歌词，辅助人工听写、人工检索和后续对齐准备。
+本命令用于从歌曲音频生成 ASR 候选歌词，辅助人工听写、人工检索和后续对齐准备。
 
 它不会替代可信歌词原文，不会接入正式 WhisperX / CTC 对齐主流程，也不会生成 `.swlrc`。
 
@@ -21,7 +21,7 @@ brew install ffmpeg
 ## 提取候选歌词
 
 ```bash
-python scripts/extract_candidate_lyrics_from_audio.py \
+xingyu-align candidate extract \
   --audio "/path/to/song.flac" \
   --output-dir "/path/to/output" \
   --language zh \
@@ -57,7 +57,7 @@ python scripts/extract_candidate_lyrics_from_audio.py \
 为了人工检索或比对，可以额外生成简体字形副本。该步骤不会覆盖 `transcript.cleaned.txt`。
 
 ```bash
-python scripts/normalize_candidate_lyrics_script.py \
+xingyu-align candidate normalize \
   --input "/path/to/output/transcript.cleaned.txt" \
   --output-dir "/path/to/output" \
   --to zh-Hans

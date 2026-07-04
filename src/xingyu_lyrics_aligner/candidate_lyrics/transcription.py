@@ -29,6 +29,34 @@ class CandidateLyricsError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class CandidateLyricsExtractionRequest:
+    """Stable service-layer request for candidate lyric extraction."""
+
+    audio_path: Path
+    output_dir: Path
+    language: str | None = None
+    model: str = "medium"
+    device: str = "auto"
+    skip_separation: bool = False
+    vad_filter: bool = True
+    condition_on_previous_text: bool = False
+    keep_suspected_metadata: bool = False
+    retain_intermediate: bool = False
+    intermediate_dir: Path | None = None
+    task_type: str = "LYRIC_DRAFT_EXTRACTION"
+
+
+@dataclass(frozen=True)
+class CandidateLyricsExtractionResult:
+    """Files and report produced by candidate lyric extraction."""
+
+    output_dir: Path
+    files: dict[str, Path]
+    report: dict[str, object]
+    intermediate_files: dict[str, Path] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class WordTiming:
     """Optional word-level timing returned by ASR."""
 
@@ -310,8 +338,61 @@ def extract_candidate_lyrics(
 ) -> dict[str, object]:
     """Extract candidate lyrics from audio and write local review artifacts."""
 
-    audio_path = args.audio.expanduser().resolve()
-    output_dir = args.output_dir.expanduser().resolve()
+    request = CandidateLyricsExtractionRequest(
+        audio_path=args.audio,
+        output_dir=args.output_dir,
+        language=args.language,
+        model=args.model,
+        device=args.device,
+        skip_separation=args.skip_separation,
+        vad_filter=not args.no_vad,
+        condition_on_previous_text=args.condition_on_previous_text,
+        keep_suspected_metadata=args.keep_suspected_metadata,
+        # Preserve the v0.3.0 CLI behavior: Demucs vocals.wav is kept by default.
+        # Worker callers pass retain_intermediate explicitly and use job/intermediate.
+        retain_intermediate=True if not args.skip_separation else bool(args.keep_intermediates),
+        intermediate_dir=None,
+        task_type="CANDIDATE_EXTRACT_CLI",
+    )
+    service = CandidateLyricsExtractionService(separator=separator, transcriber=transcriber)
+    return service.extract(request).report
+
+
+class CandidateLyricsExtractionService:
+    """Reusable candidate lyric extraction service for CLI and Worker."""
+
+    def __init__(
+        self,
+        *,
+        separator: Separator = separate_vocals_with_demucs,
+        transcriber: Transcriber = transcribe_with_faster_whisper,
+    ) -> None:
+        self.separator = separator
+        self.transcriber = transcriber
+
+    def extract(
+        self,
+        request: CandidateLyricsExtractionRequest,
+    ) -> CandidateLyricsExtractionResult:
+        """Extract candidate lyrics from audio and write review artifacts."""
+
+        return extract_candidate_lyrics_request(
+            request,
+            separator=self.separator,
+            transcriber=self.transcriber,
+        )
+
+
+def extract_candidate_lyrics_request(
+    request: CandidateLyricsExtractionRequest,
+    *,
+    separator: Separator = separate_vocals_with_demucs,
+    transcriber: Transcriber = transcribe_with_faster_whisper,
+) -> CandidateLyricsExtractionResult:
+    """Extract candidate lyrics from a typed service request."""
+
+    audio_path = request.audio_path.expanduser().resolve()
+    output_dir = request.output_dir.expanduser().resolve()
 
     if not audio_path.exists():
         raise CandidateLyricsError(f"音频文件不存在：{audio_path}")
@@ -325,34 +406,41 @@ def extract_candidate_lyrics(
     ]
     started_at = time.perf_counter()
 
+    intermediate_dir = (
+        request.intermediate_dir.expanduser().resolve()
+        if request.intermediate_dir is not None
+        else output_dir
+    )
+    intermediate_dir.mkdir(parents=True, exist_ok=True)
+
     vocals_path: Path | None = None
     transcription_audio = audio_path
-    if args.skip_separation:
+    if request.skip_separation:
         warnings.append("已跳过 Demucs 人声分离；ASR 直接使用原始混音音频。")
     else:
-        vocals_path = separator(audio_path, output_dir)
+        vocals_path = separator(audio_path, intermediate_dir)
         transcription_audio = vocals_path
 
     transcription = transcriber(
         transcription_audio,
-        model_name=args.model,
-        language=args.language,
-        device=args.device,
-        vad_filter=not args.no_vad,
-        condition_on_previous_text=args.condition_on_previous_text,
+        model_name=request.model,
+        language=request.language,
+        device=request.device,
+        vad_filter=request.vad_filter,
+        condition_on_previous_text=request.condition_on_previous_text,
     )
     warnings.extend(transcription.warnings)
 
     raw_text = "".join(segment.text for segment in transcription.segments).strip()
     suspected_metadata = suspected_metadata_segments(transcription.segments)
-    if suspected_metadata and not args.keep_suspected_metadata:
+    if suspected_metadata and not request.keep_suspected_metadata:
         warnings.append(
             f"已从 cleaned 候选歌词中剔除 {len(suspected_metadata)} 个疑似词曲/字幕署名片段；"
             "原文仍保留在 raw 与 segments 文件中。"
         )
     cleaned_text = clean_transcript_segments(
         transcription.segments,
-        keep_suspected_metadata=args.keep_suspected_metadata,
+        keep_suspected_metadata=request.keep_suspected_metadata,
     )
 
     raw_path = output_dir / "transcript.raw.txt"
@@ -364,22 +452,37 @@ def extract_candidate_lyrics(
     write_segments_json(transcription.segments, segments_path)
     cleaned_path.write_text(cleaned_text, encoding="utf-8")
 
+    if vocals_path is not None and not request.retain_intermediate:
+        try:
+            vocals_path.unlink(missing_ok=True)
+        except OSError as exc:
+            warnings.append(f"清理中间 vocals.wav 失败：{exc.__class__.__name__}")
+        vocals_path = None
+
     report: dict[str, object] = {
+        "taskType": request.task_type,
         "input_audio": str(audio_path),
         "output_dir": str(output_dir),
-        "asr_model": args.model,
-        "requested_language": args.language,
+        "asr_model": request.model,
+        "requested_language": request.language,
         "detected_language": transcription.detected_language,
-        "device": args.device,
+        "device": request.device,
         "asr_options": {
-            "vad_filter": not args.no_vad,
-            "condition_on_previous_text": args.condition_on_previous_text,
-            "keep_suspected_metadata": args.keep_suspected_metadata,
+            "vad_filter": request.vad_filter,
+            "condition_on_previous_text": request.condition_on_previous_text,
+            "keep_suspected_metadata": request.keep_suspected_metadata,
         },
-        "separation_enabled": not args.skip_separation,
-        "keep_intermediates": True if not args.skip_separation else bool(args.keep_intermediates),
+        "separation_enabled": not request.skip_separation,
+        "retain_intermediate": request.retain_intermediate,
+        "keep_intermediates": request.retain_intermediate,
         "suspected_metadata_segments": suspected_metadata,
         "duration_seconds": round(time.perf_counter() - started_at, 3),
+        "summary": {
+            "segment_count": len(transcription.segments),
+            "raw_character_count": len(raw_text),
+            "cleaned_line_count": len([line for line in cleaned_text.splitlines() if line.strip()]),
+            "cleaned_character_count": len(cleaned_text.strip()),
+        },
         "outputs": {
             "vocals": str(vocals_path) if vocals_path is not None else None,
             "transcript_raw": str(raw_path),
@@ -388,9 +491,22 @@ def extract_candidate_lyrics(
             "report": str(report_path),
         },
         "warnings": warnings,
+        "errors": [],
     }
     write_report_json(report, report_path)
-    return report
+    files = {
+        "transcript_raw": raw_path,
+        "transcript_segments": segments_path,
+        "transcript_cleaned": cleaned_path,
+        "report": report_path,
+    }
+    intermediate_files = {"vocals": vocals_path} if vocals_path is not None else {}
+    return CandidateLyricsExtractionResult(
+        output_dir=output_dir,
+        files=files,
+        report=report,
+        intermediate_files=intermediate_files,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,41 +1,71 @@
 # Architecture
 
-Xingyu Lyrics Aligner is designed as a local-first CLI project. The current bootstrap keeps runtime concerns separated so future model integration can be added without changing user-facing contracts.
+Xingyu Lyrics Aligner is a local-first CLI and Worker project. It keeps the
+audio-library integration at the filesystem boundary: the library creates job
+directories, and the Worker reads requests and writes result files.
+
+## Main Flows
+
+Trusted-lyrics alignment:
+
+```text
+trusted lyrics + audio
+  -> alignment pipeline
+  -> alignment.json + lyrics.lrc + lyrics.swlrc + report.json
+```
+
+Candidate lyric draft extraction:
+
+```text
+audio
+  -> optional Demucs vocals separation
+  -> faster-whisper transcription
+  -> transcript.cleaned.txt + transcript.raw.txt + transcript.segments.json
+```
+
+Candidate drafts are untrusted text for manual correction. They do not become
+SWLRC and do not replace the trusted-lyrics alignment flow.
 
 ## Layers
 
 - `cli.py`: Typer commands, option parsing, and human-readable output.
-- `i18n/`: JSON translation catalogs and a small lookup helper.
-- `device.py`: device strategy names and local capability detection.
-- `doctor.py`: structured environment checks. The report is already modeled for future JSON output.
-- `model_registry.py`: model slots and local status. v0.1.0 never downloads or loads model files.
-- `schemas.py`: Pydantic models for future job manifests, model manifests, alignment results, and export metadata.
+- `worker.py`: shared-directory protocol, atomic job claiming, path validation,
+  status writes, and task dispatch.
+- `alignment/`: trusted-lyrics alignment pipeline and LRC/SWLRC exporters.
+- `candidate_lyrics/transcription.py`: reusable candidate lyric extraction
+  service used by both CLI and Worker.
+- `candidate_lyrics/script_normalization.py`: optional Simplified/Traditional
+  review-copy generation for candidate text.
+- `schemas/`: structured alignment, manifest, and report models.
+- `i18n/`: JSON translation catalogs and lookup helper.
+- `model_registry.py`, `doctor.py`, `device.py`: runtime capability and model
+  metadata helpers.
 
-## Future Alignment Boundary
+The Worker does not implement a second ASR path. `LYRIC_DRAFT_EXTRACTION`
+delegates to `CandidateLyricsExtractionService`, which is also used by
+`xingyu-align candidate extract`.
 
-Real alignment should be introduced behind an engine interface, for example:
+## Worker Protocol Boundary
 
-```text
-src/xingyu_lyrics_aligner/alignment/
-  engine.py
-  manifest.py
-  exporters/
-```
+`schemaVersion: 1` is preserved for v0.3.0 alignment jobs. `schemaVersion: 2`
+requires `taskType` and supports:
 
-The CLI should build a `JobManifest`, pass it to an alignment service, then export results. The service should return an `AlignmentResult` rather than writing CLI text directly.
+- `LYRICS_ALIGNMENT`
+- `LYRIC_DRAFT_EXTRACTION`
 
-## Xingyu Music Library Boundary
+Path validation is intentionally stricter than the general CLI:
 
-Future Xingyu music-library integration should be treated as an input provider. It can supply trusted audio paths, lyrics text, metadata, and hashes, but it should not be mixed with the alignment engine itself.
+- audio must resolve under `--music-dir`;
+- lyrics and section manifests must resolve under the current job directory;
+- output must be exactly the current job's `result/`;
+- symlink and `../` escapes are rejected.
+
+This lets the Worker run inside Docker with `/music` read-only and `/jobs` plus
+`/models` writable, without exposing ports or mounting the Docker socket.
 
 ## Local Data Directories
 
-- `models/`: future local model files and manifests.
-- `cache/`: transient processing cache.
-- `outputs/`: generated LRC and JSON exports.
+- `/models` or `models/`: model cache and upstream downloads.
+- `/jobs`: Worker requests, status files, attempts, intermediates, and results.
+- `outputs/`: direct CLI output examples.
 - `docs/`: project documentation.
-- `src/xingyu_lyrics_aligner/i18n/`: CLI translation resources.
-
-## JSON Output Readiness
-
-`DoctorReport`, `JobManifest`, `AlignmentResult`, and `ExportResult` are Pydantic models so future `--json` output can serialize structured data without scraping human CLI text.

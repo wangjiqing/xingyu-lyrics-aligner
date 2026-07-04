@@ -1,30 +1,38 @@
 # Docker Worker Protocol
 
-v0.3.0 adds an optional shared-directory Worker for Docker Compose deployments.
-It is a local executor, not a service platform: it does not expose HTTP ports,
-does not use a database, does not use a message queue, and does not need the
-Docker socket.
+v0.4.0 extends the shared-directory Worker with candidate lyric draft
+extraction. The Worker remains a local executor: it exposes no HTTP port, uses
+no database or message queue, and does not need the Docker socket.
 
 ## Mounted Paths
 
 ```text
 /music   read-only audio library
-/jobs    alignment requests and outputs
-/models  persistent model cache
+/jobs    requests, status, attempt logs, and outputs
+/models  writable persistent model cache
 ```
 
 The container runs as UID/GID `10001:10001`. The host `/jobs` and `/models`
 directories must be writable by that user, or the Compose service must set a
-compatible `user:`. `/music` should be read-only.
+compatible `user:`. `/music` should be mounted read-only.
 
-For the default UID/GID:
+The v0.4.0 standard image installs both alignment and candidate-lyrics
+dependencies, including faster-whisper, Demucs, TorchCodec, and their runtime
+dependencies. It is larger than v0.3.0. First use may download or warm model
+files into `/models`, and CPU draft extraction is much slower and uses more
+temporary disk than trusted-lyrics alignment.
 
-```bash
-mkdir -p alignment-jobs aligner-model-cache
-sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
-```
+The Dockerfile finishes by reinstalling the CPU PyTorch runtime from the PyTorch
+CPU wheel index: `torch==2.11.0+cpu`, `torchaudio==2.11.0+cpu`,
+`torchvision==0.26.0+cpu`, and `torchcodec==0.14.0+cpu`. This is required so
+TorchCodec can load in the slim CPU image. The reinstall uses a `--no-deps`
+runtime override. Project extras do not directly pin TorchCodec; the standard
+Docker image owns that runtime choice, and release smoke tests must verify
+`import whisperx` and `import torchcodec` in the final image.
 
 ## Job Layout
+
+Alignment jobs:
 
 ```text
 /jobs/{jobId}/
@@ -33,9 +41,10 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
   sections.json
   READY
   RUNNING
-  ABANDONED
+  SUCCEEDED | NEEDS_REVIEW | FAILED | ABANDONED
   status.json
   stderr.log
+  attempts/
   result/
     alignment.json
     lyrics.lrc
@@ -43,12 +52,43 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
     report.json
 ```
 
-`sections.json` is optional. `READY`, `RUNNING`, and `ABANDONED` are marker
-files; a normal completed job keeps `RUNNING` as evidence that the Worker
-claimed it. Claiming is done by exclusive `RUNNING` file creation, followed by
-removing `READY`; two Workers cannot both create the same `RUNNING` marker.
+Candidate lyric draft extraction jobs:
 
-## request.json
+```text
+/jobs/{jobId}/
+  request.json
+  READY
+  RUNNING
+  SUCCEEDED | FAILED | ABANDONED
+  status.json
+  stderr.log
+  attempts/
+  intermediate/
+    vocals.wav
+  result/
+    transcript.cleaned.txt
+    transcript.raw.txt
+    transcript.segments.json
+    report.json
+```
+
+`sections.json` is optional for alignment. `intermediate/vocals.wav` is kept
+only when the request sets `retainIntermediate: true`; otherwise the Worker
+cleans it after success or failure. Draft extraction never writes
+`NEEDS_REVIEW`, because all candidate lyrics require human correction before
+they can become trusted lyrics.
+
+Claiming is done by exclusive `RUNNING` file creation, followed by removing
+`READY`. Two Workers cannot both create the same `RUNNING` marker. Completed
+jobs keep `RUNNING` as claim evidence and also receive a terminal marker.
+
+## Request Protocol
+
+### schemaVersion 1
+
+Schema v1 is the v0.3.0 alignment protocol and remains supported. It is always
+treated as `LYRICS_ALIGNMENT`; adding `taskType` to v1 is rejected by the
+existing `extra=forbid` rule.
 
 ```json
 {
@@ -64,115 +104,136 @@ removing `READY`; two Workers cannot both create the same `RUNNING` marker.
 }
 ```
 
-Path rules are enforced before alignment:
+### schemaVersion 2 Alignment
 
-- `audioPath` must be absolute and stay under `/music`.
-- `lyricsPath`, `sectionManifestPath`, and `outputDir` must be absolute and stay
-  under `/jobs`.
+Schema v2 requires `taskType`. Alignment v2 keeps the same output contract as
+v1.
+
+```json
+{
+  "schemaVersion": 2,
+  "jobId": "job-001",
+  "taskType": "LYRICS_ALIGNMENT",
+  "audioPath": "/music/artist/song.flac",
+  "lyricsPath": "/jobs/job-001/trusted-lyrics.txt",
+  "outputDir": "/jobs/job-001/result",
+  "language": "zh",
+  "device": "cpu",
+  "sectionManifestPath": null,
+  "createdAt": "2026-07-04T00:00:00Z"
+}
+```
+
+### schemaVersion 2 Draft Extraction
+
+Draft extraction converts audio into unaligned ASR candidate text for manual
+editing. It does not produce LRC, SWLRC, or trusted lyrics.
+
+```json
+{
+  "schemaVersion": 2,
+  "jobId": "job-001",
+  "taskType": "LYRIC_DRAFT_EXTRACTION",
+  "audioPath": "/music/artist/song.flac",
+  "outputDir": "/jobs/job-001/result",
+  "language": "zh",
+  "device": "cpu",
+  "asrModel": "medium",
+  "skipSeparation": false,
+  "vadFilter": true,
+  "conditionOnPreviousText": false,
+  "keepSuspectedMetadata": false,
+  "retainIntermediate": false,
+  "createdAt": "2026-07-04T00:00:00Z"
+}
+```
+
+## Path Rules
+
+The Worker validates paths after claiming and before execution:
+
+- `jobId` must exactly match the current job directory name.
+- `audioPath` must be an existing file under `--music-dir`.
+- `lyricsPath` and `sectionManifestPath` must be existing files under the
+  current job directory.
+- `outputDir` must be exactly `/jobs/{jobId}/result`.
+- All request paths must be absolute.
 - `../` escapes and symlink-resolved escapes are rejected.
+- Unknown request fields are rejected.
+
+These rules prevent a request from reading arbitrary host files or writing
+outside the current job directory.
 
 ## Status Contract
 
 `status.json` is always machine-readable JSON. It is written to a temporary file
-in the same directory, flushed, fsynced, and atomically renamed into place so the
-caller does not observe partial JSON. While running:
+in the same directory, flushed, fsynced, and atomically renamed into place.
+Readers should accept additional fields.
+
+Running status includes both the older `status` field and the v0.4.0 `state`
+field:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "jobId": "job-001",
+  "taskType": "LYRIC_DRAFT_EXTRACTION",
   "status": "RUNNING",
-  "updatedAt": "2026-06-28T00:00:00Z"
+  "state": "RUNNING",
+  "stage": "transcribing",
+  "progress": null,
+  "startedAt": "2026-07-04T00:00:00Z",
+  "updatedAt": "2026-07-04T00:00:00Z",
+  "warningCount": 0,
+  "errorMessage": null
 }
 ```
 
-Successful alignment writes the same payload shape as `xingyu-align align
---json-result` under `result`:
+Alignment success writes the same payload shape as `xingyu-align align
+--json-result` under `result` and verifies `alignment.json`, `lyrics.lrc`,
+`lyrics.swlrc`, and `report.json` before `SUCCEEDED` or `NEEDS_REVIEW`.
 
-```json
-{
-  "schemaVersion": 1,
-  "jobId": "job-001",
-  "status": "SUCCEEDED",
-  "updatedAt": "2026-06-28T00:00:00Z",
-  "attempt": {
-    "id": "20260628T000000Z-12345",
-    "stderr": "/jobs/job-001/attempts/20260628T000000Z-12345.stderr.log"
-  },
-  "result": {
-    "success": true,
-    "output_dir": "/jobs/job-001/result",
-    "files": {
-      "alignment_json": "/jobs/job-001/result/alignment.json",
-      "lrc": "/jobs/job-001/result/lyrics.lrc",
-      "swlrc": "/jobs/job-001/result/lyrics.swlrc",
-      "report": "/jobs/job-001/result/report.json"
-    },
-    "summary": {
-      "line_count": 1,
-      "aligned_line_count": 1,
-      "token_count": 1,
-      "coverage": 1.0,
-      "estimated_token_count": 0,
-      "skipped_line_count": 0
-    },
-    "warnings": []
-  }
-}
+Draft extraction success verifies these files before `SUCCEEDED`:
+
+```text
+result/transcript.cleaned.txt
+result/transcript.raw.txt
+result/transcript.segments.json
+result/report.json
 ```
 
-Before writing `SUCCEEDED` or `NEEDS_REVIEW`, the Worker verifies that
-`alignment.json`, `lyrics.lrc`, `lyrics.swlrc`, and `report.json` all exist. A
-missing required output is `FAILED` with `OUTPUT_MISSING`.
-
-`NEEDS_REVIEW` is used when alignment exits successfully but quality signals need
-human review: non-empty warnings, skipped SWLRC lines, coverage below
-`--min-coverage`, or estimated token count above
-`--estimated-token-review-threshold`.
+`report.json` includes at least `taskType`, ASR model, separation and VAD
+settings, duration, output summary, warnings, and errors. Paths under
+`report.outputs` are container paths such as `/jobs/job-001/result/...`; map them
+through the host volume mount when reading files outside the container.
 
 Failures keep tracebacks in `attempts/{attemptId}.stderr.log`, refresh
-`stderr.log` as the latest-attempt convenience copy, and write a structured
-summary. A retry can overwrite `stderr.log`, but previous attempt logs are kept.
-
-```json
-{
-  "schemaVersion": 1,
-  "jobId": "job-001",
-  "status": "FAILED",
-  "updatedAt": "2026-06-28T00:00:00Z",
-  "attempt": {
-    "id": "20260628T000000Z-12345",
-    "stderr": "/jobs/job-001/attempts/20260628T000000Z-12345.stderr.log"
-  },
-  "error": {
-    "code": "PATH_OUTSIDE_ALLOWED_ROOT",
-    "message": "audioPath must stay under /music: /tmp/song.flac",
-    "stderr": "/jobs/job-001/stderr.log",
-    "attemptStderr": "/jobs/job-001/attempts/20260628T000000Z-12345.stderr.log"
-  }
-}
-```
+`stderr.log` as the latest-attempt convenience copy, and write structured
+failure status. A retry can overwrite `stderr.log`, but previous attempt logs
+are kept.
 
 Stale `RUNNING` jobs are marked `ABANDONED` after
-`--running-timeout-seconds`. They are not retried automatically in v0.3.0; the
-caller should create a new job directory if a retry is desired.
+`--running-timeout-seconds`. They are not retried automatically; the caller
+should create a new job directory if a retry is desired.
 
-## Compose
+## Compose And Regression
 
 Start from [deploy/docker-compose.worker.example.yml](../deploy/docker-compose.worker.example.yml)
-and [deploy/.env.worker.example](../deploy/.env.worker.example). Preheat models
-first:
+and [deploy/.env.worker.example](../deploy/.env.worker.example).
 
 ```bash
-mkdir -p alignment-jobs aligner-model-cache
-sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
+docker build -t wangjiqing/xingyu-lyrics-aligner:0.4.0 .
 
-docker compose --env-file deploy/.env.worker.example \
-  -f deploy/docker-compose.worker.example.yml run --rm \
-  xingyu-lyrics-aligner-worker \
-  xingyu-align models pull --language zh --device cpu
+docker run --rm \
+  --user 10001:10001 \
+  -v "$PWD/music:/music:ro" \
+  -v "$PWD/alignment-jobs:/jobs" \
+  -v "$PWD/aligner-model-cache:/models" \
+  wangjiqing/xingyu-lyrics-aligner:0.4.0 \
+  xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu --once
 ```
 
-GPU containers are not part of the v0.3.0 contract. Future GPU support should be
-validated separately for PyTorch, WhisperX, CUDA runtime, and host drivers before
-publishing a GPU Compose profile.
+Do not publish ports and do not mount `/var/run/docker.sock`. GPU containers
+are not part of the v0.4.0 contract; validate PyTorch, WhisperX, faster-whisper,
+Demucs, CUDA runtime, and host drivers separately before publishing a GPU
+profile.
