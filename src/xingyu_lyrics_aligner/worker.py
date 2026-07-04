@@ -4,17 +4,22 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import time
 import traceback
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from xingyu_lyrics_aligner.api import AlignLyricsOptions, align_lyrics
+from xingyu_lyrics_aligner.candidate_lyrics.transcription import (
+    CandidateLyricsExtractionRequest,
+    CandidateLyricsExtractionService,
+)
 from xingyu_lyrics_aligner.commands.align import align_error_code, align_json_result_payload
 from xingyu_lyrics_aligner.device import DeviceStrategy
 
@@ -29,12 +34,19 @@ class WorkerStatus(StrEnum):
     ABANDONED = "ABANDONED"
 
 
-class WorkerRequest(BaseModel):
-    """Machine contract for /jobs/{jobId}/request.json."""
+class WorkerTaskType(StrEnum):
+    """Worker task types supported by schemaVersion 2."""
+
+    LYRICS_ALIGNMENT = "LYRICS_ALIGNMENT"
+    LYRIC_DRAFT_EXTRACTION = "LYRIC_DRAFT_EXTRACTION"
+
+
+class WorkerRequestV1(BaseModel):
+    """v0.3.0 alignment request contract for /jobs/{jobId}/request.json."""
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: int = Field(alias="schemaVersion")
+    schema_version: Literal[1] = Field(alias="schemaVersion")
     job_id: str = Field(alias="jobId", min_length=1)
     audio_path: Path = Field(alias="audioPath")
     lyrics_path: Path = Field(alias="lyricsPath")
@@ -43,6 +55,51 @@ class WorkerRequest(BaseModel):
     device: DeviceStrategy = DeviceStrategy.CPU
     section_manifest_path: Path | None = Field(default=None, alias="sectionManifestPath")
     created_at: str | None = Field(default=None, alias="createdAt")
+
+    @property
+    def task_type(self) -> WorkerTaskType:
+        return WorkerTaskType.LYRICS_ALIGNMENT
+
+
+class WorkerAlignmentRequestV2(BaseModel):
+    """schemaVersion 2 trusted-lyrics alignment request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[2] = Field(alias="schemaVersion")
+    job_id: str = Field(alias="jobId", min_length=1)
+    task_type: Literal[WorkerTaskType.LYRICS_ALIGNMENT] = Field(alias="taskType")
+    audio_path: Path = Field(alias="audioPath")
+    lyrics_path: Path = Field(alias="lyricsPath")
+    output_dir: Path = Field(alias="outputDir")
+    language: str = "zh"
+    device: DeviceStrategy = DeviceStrategy.CPU
+    section_manifest_path: Path | None = Field(default=None, alias="sectionManifestPath")
+    created_at: str | None = Field(default=None, alias="createdAt")
+
+
+class WorkerDraftExtractionRequestV2(BaseModel):
+    """schemaVersion 2 candidate lyric draft extraction request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[2] = Field(alias="schemaVersion")
+    job_id: str = Field(alias="jobId", min_length=1)
+    task_type: Literal[WorkerTaskType.LYRIC_DRAFT_EXTRACTION] = Field(alias="taskType")
+    audio_path: Path = Field(alias="audioPath")
+    output_dir: Path = Field(alias="outputDir")
+    language: str = "zh"
+    device: DeviceStrategy = DeviceStrategy.CPU
+    asr_model: str = Field(default="medium", alias="asrModel")
+    skip_separation: bool = Field(default=False, alias="skipSeparation")
+    vad_filter: bool = Field(default=True, alias="vadFilter")
+    condition_on_previous_text: bool = Field(default=False, alias="conditionOnPreviousText")
+    keep_suspected_metadata: bool = Field(default=False, alias="keepSuspectedMetadata")
+    retain_intermediate: bool = Field(default=False, alias="retainIntermediate")
+    created_at: str | None = Field(default=None, alias="createdAt")
+
+
+WorkerRequest = WorkerRequestV1 | WorkerAlignmentRequestV2 | WorkerDraftExtractionRequestV2
 
 
 @dataclass(frozen=True)
@@ -126,15 +183,7 @@ def claim_next_job(jobs_dir: Path) -> ClaimedJob | None:
         except WorkerError as exc:
             write_failure_status(job_dir, exc.code, exc.message)
             return None
-        write_status(
-            job_dir,
-            {
-                "schemaVersion": 1,
-                "jobId": request.job_id,
-                "status": WorkerStatus.RUNNING,
-                "updatedAt": utc_now(),
-            },
-        )
+        write_running_status(job_dir, request, stage=None)
         return ClaimedJob(job_dir=job_dir, request=request)
     return None
 
@@ -148,16 +197,48 @@ def execute_job(
     min_coverage: float,
     estimated_token_review_threshold: int,
 ) -> None:
+    """Run one claimed job and write status.json plus stderr.log."""
+
+    if claimed.request.task_type == WorkerTaskType.LYRIC_DRAFT_EXTRACTION:
+        execute_draft_extraction_job(
+            claimed,
+            jobs_root=jobs_root,
+            music_root=music_root,
+            device_override=device_override,
+        )
+        return
+    execute_alignment_job(
+        claimed,
+        jobs_root=jobs_root,
+        music_root=music_root,
+        device_override=device_override,
+        min_coverage=min_coverage,
+        estimated_token_review_threshold=estimated_token_review_threshold,
+    )
+
+
+def execute_alignment_job(
+    claimed: ClaimedJob,
+    *,
+    jobs_root: Path,
+    music_root: Path,
+    device_override: DeviceStrategy,
+    min_coverage: float,
+    estimated_token_review_threshold: int,
+) -> None:
     """Run one claimed alignment job and write status.json plus stderr.log."""
 
     job_dir = claimed.job_dir
     request = claimed.request
+    if request.task_type != WorkerTaskType.LYRICS_ALIGNMENT:
+        raise WorkerError("TASK_TYPE_MISMATCH", "Expected a LYRICS_ALIGNMENT request.")
     attempt_id = new_attempt_id()
     attempt_stderr_path = job_dir / "attempts" / f"{attempt_id}.stderr.log"
     stderr_path = job_dir / "stderr.log"
     attempt_stderr_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         validate_request_paths(request, jobs_root=jobs_root, music_root=music_root)
+        write_running_status(job_dir, request, stage="aligning")
         result = align_lyrics(
             audio_path=request.audio_path,
             lyrics_path=request.lyrics_path,
@@ -177,12 +258,16 @@ def execute_job(
             min_coverage=min_coverage,
             estimated_token_review_threshold=estimated_token_review_threshold,
         )
+        write_terminal_marker(job_dir, status)
         write_status(
             job_dir,
             {
-                "schemaVersion": 1,
+                "schemaVersion": request.schema_version,
                 "jobId": request.job_id,
+                "taskType": request.task_type,
                 "status": status,
+                "state": status,
+                "stage": "completed",
                 "updatedAt": utc_now(),
                 "attempt": {
                     "id": attempt_id,
@@ -199,6 +284,95 @@ def execute_job(
             job_dir,
             code,
             message,
+            request=request,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+        )
+
+
+def execute_draft_extraction_job(
+    claimed: ClaimedJob,
+    *,
+    jobs_root: Path,
+    music_root: Path,
+    device_override: DeviceStrategy,
+    service: CandidateLyricsExtractionService | None = None,
+) -> None:
+    """Run one claimed candidate lyric draft extraction job."""
+
+    job_dir = claimed.job_dir
+    request = claimed.request
+    if not isinstance(request, WorkerDraftExtractionRequestV2):
+        raise WorkerError("TASK_TYPE_MISMATCH", "Expected a LYRIC_DRAFT_EXTRACTION request.")
+    attempt_id = new_attempt_id()
+    attempt_stderr_path = job_dir / "attempts" / f"{attempt_id}.stderr.log"
+    stderr_path = job_dir / "stderr.log"
+    attempt_stderr_path.parent.mkdir(parents=True, exist_ok=True)
+    intermediate_dir = job_dir / "intermediate"
+    try:
+        validate_request_paths(request, jobs_root=jobs_root, music_root=music_root)
+        first_stage = "transcribing" if request.skip_separation else "separating"
+        write_running_status(job_dir, request, stage=first_stage)
+        extraction_service = service or CandidateLyricsExtractionService()
+        result = extraction_service.extract(
+            CandidateLyricsExtractionRequest(
+                audio_path=request.audio_path,
+                output_dir=request.output_dir,
+                language=request.language,
+                model=request.asr_model,
+                device=device_override.value,
+                skip_separation=request.skip_separation,
+                vad_filter=request.vad_filter,
+                condition_on_previous_text=request.condition_on_previous_text,
+                keep_suspected_metadata=request.keep_suspected_metadata,
+                retain_intermediate=request.retain_intermediate,
+                intermediate_dir=intermediate_dir,
+                task_type=request.task_type,
+            )
+        )
+        write_running_status(job_dir, request, stage="writing_result")
+        validate_draft_result_files(result.files)
+        if not request.retain_intermediate:
+            shutil.rmtree(intermediate_dir, ignore_errors=True)
+        write_attempt_stderr(attempt_stderr_path, stderr_path, "")
+        write_terminal_marker(job_dir, WorkerStatus.SUCCEEDED)
+        report_warnings = result.report.get("warnings", [])
+        warning_count = len(report_warnings) if isinstance(report_warnings, list) else 0
+        write_status(
+            job_dir,
+            {
+                "schemaVersion": request.schema_version,
+                "jobId": request.job_id,
+                "taskType": request.task_type,
+                "status": WorkerStatus.SUCCEEDED,
+                "state": WorkerStatus.SUCCEEDED,
+                "stage": "writing_result",
+                "updatedAt": utc_now(),
+                "warningCount": warning_count,
+                "errorMessage": None,
+                "attempt": {
+                    "id": attempt_id,
+                    "stderr": str(attempt_stderr_path),
+                },
+                "result": {
+                    "success": True,
+                    "taskType": request.task_type,
+                    "files": result.files,
+                    "report": result.report,
+                },
+            },
+        )
+    except Exception as exc:
+        if isinstance(request, WorkerDraftExtractionRequestV2) and not request.retain_intermediate:
+            shutil.rmtree(intermediate_dir, ignore_errors=True)
+        write_attempt_stderr(attempt_stderr_path, stderr_path, traceback.format_exc())
+        code = exc.code if isinstance(exc, WorkerError) else "CANDIDATE_EXTRACTION_FAILED"
+        message = exc.message if isinstance(exc, WorkerError) else str(exc)
+        write_failure_status(
+            job_dir,
+            code,
+            message,
+            request=request,
             attempt_id=attempt_id,
             attempt_stderr_path=attempt_stderr_path,
         )
@@ -214,12 +388,29 @@ def load_request(job_dir: Path) -> WorkerRequest:
         raise WorkerError("REQUEST_MISSING", f"Missing request.json: {request_path}") from exc
     except json.JSONDecodeError as exc:
         raise WorkerError("REQUEST_INVALID_JSON", f"Invalid request.json: {exc}") from exc
+    if not isinstance(data, dict):
+        raise WorkerError("REQUEST_INVALID", "request.json must contain a JSON object.")
+    schema_version = data.get("schemaVersion")
     try:
-        request = WorkerRequest.model_validate(data)
+        if schema_version == 1:
+            request: WorkerRequest = WorkerRequestV1.model_validate(data)
+        elif schema_version == 2:
+            task_type = data.get("taskType")
+            if task_type == WorkerTaskType.LYRICS_ALIGNMENT:
+                request = WorkerAlignmentRequestV2.model_validate(data)
+            elif task_type == WorkerTaskType.LYRIC_DRAFT_EXTRACTION:
+                request = WorkerDraftExtractionRequestV2.model_validate(data)
+            elif task_type is None:
+                raise WorkerError("TASK_TYPE_MISSING", "schemaVersion 2 requires taskType.")
+            else:
+                raise WorkerError("UNKNOWN_TASK_TYPE", f"Unsupported taskType: {task_type!r}.")
+        else:
+            raise WorkerError(
+                "UNSUPPORTED_SCHEMA",
+                "Only worker schemaVersion 1 and 2 are supported.",
+            )
     except ValidationError as exc:
         raise WorkerError("REQUEST_INVALID", str(exc)) from exc
-    if request.schema_version != 1:
-        raise WorkerError("UNSUPPORTED_SCHEMA", "Only worker request schemaVersion 1 is supported.")
     if request.job_id != job_dir.name:
         raise WorkerError(
             "JOB_ID_MISMATCH",
@@ -236,11 +427,20 @@ def validate_request_paths(
 ) -> None:
     """Restrict request paths to mounted /music and /jobs trees."""
 
-    require_inside(request.audio_path, music_root, field="audioPath")
-    require_inside(request.lyrics_path, jobs_root, field="lyricsPath")
+    job_dir = jobs_root / request.job_id
+    require_existing_file_inside(request.audio_path, music_root, field="audioPath")
     require_inside(request.output_dir, jobs_root, field="outputDir")
-    if request.section_manifest_path is not None:
-        require_inside(request.section_manifest_path, jobs_root, field="sectionManifestPath")
+    require_exact_output_dir(request.output_dir, job_dir)
+    if request.task_type == WorkerTaskType.LYRICS_ALIGNMENT:
+        if not isinstance(request, WorkerRequestV1 | WorkerAlignmentRequestV2):
+            raise WorkerError("TASK_TYPE_MISMATCH", "Invalid alignment request model.")
+        require_existing_file_inside(request.lyrics_path, job_dir, field="lyricsPath")
+        if request.section_manifest_path is not None:
+            require_existing_file_inside(
+                request.section_manifest_path,
+                job_dir,
+                field="sectionManifestPath",
+            )
 
 
 def require_inside(path: Path, root: Path, *, field: str) -> None:
@@ -257,6 +457,40 @@ def require_inside(path: Path, root: Path, *, field: str) -> None:
             "PATH_OUTSIDE_ALLOWED_ROOT",
             f"{field} must stay under {resolved_root}: {path}",
         ) from exc
+
+
+def require_existing_file_inside(path: Path, root: Path, *, field: str) -> None:
+    """Reject missing files, symlink escapes, relative paths, and paths outside root."""
+
+    require_inside(path, root, field=field)
+    if not path.exists():
+        raise WorkerError("PATH_MISSING", f"{field} does not exist.")
+    if not path.is_file():
+        raise WorkerError("PATH_NOT_FILE", f"{field} is not a file.")
+    require_inside(path.resolve(strict=True), root.resolve(strict=False), field=field)
+
+
+def require_exact_output_dir(output_dir: Path, job_dir: Path) -> None:
+    """Require outputDir to be exactly the current job's result directory."""
+
+    if not output_dir.is_absolute():
+        raise WorkerError("PATH_NOT_ABSOLUTE", "outputDir must be an absolute path.")
+    expected = (job_dir / "result").resolve(strict=False)
+    resolved = output_dir.resolve(strict=False)
+    if resolved != expected:
+        raise WorkerError(
+            "OUTPUT_DIR_INVALID",
+            "outputDir must be the current job result directory.",
+        )
+    if output_dir.exists() and output_dir.is_symlink():
+        raise WorkerError("PATH_OUTSIDE_ALLOWED_ROOT", "outputDir must not be a symlink.")
+    parent = output_dir.parent
+    if parent.exists():
+        require_inside(
+            parent.resolve(strict=True),
+            job_dir.resolve(strict=False),
+            field="outputDir",
+        )
 
 
 def classify_result(
@@ -310,6 +544,31 @@ def validate_result_files(files: dict[str, Path]) -> None:
         )
 
 
+def validate_draft_result_files(files: dict[str, Path]) -> None:
+    """Ensure candidate draft output files exist before declaring success."""
+
+    required = {
+        "transcript_raw": "transcript.raw.txt",
+        "transcript_segments": "transcript.segments.json",
+        "transcript_cleaned": "transcript.cleaned.txt",
+        "report": "report.json",
+    }
+    missing: list[str] = []
+    for key, filename in required.items():
+        path = files.get(key)
+        if path is None:
+            missing.append(f"{key}:missing_from_result")
+            continue
+        if path.name != filename or not path.exists() or not path.is_file():
+            missing.append(filename)
+    if missing:
+        raise WorkerError(
+            "OUTPUT_MISSING",
+            "Candidate extraction completed but required output files are missing: "
+            + ", ".join(missing),
+        )
+
+
 def mark_abandoned_jobs(jobs_dir: Path, *, timeout_seconds: int) -> None:
     """Mark stale RUNNING jobs as ABANDONED so they do not hang forever."""
 
@@ -323,13 +582,20 @@ def mark_abandoned_jobs(jobs_dir: Path, *, timeout_seconds: int) -> None:
         (job_dir / "READY").unlink(missing_ok=True)
         os.replace(running, abandoned)
         job_id = job_dir.name
+        identity = read_abandoned_job_identity(job_dir)
+        write_terminal_marker(job_dir, WorkerStatus.ABANDONED)
         write_status(
             job_dir,
             {
-                "schemaVersion": 1,
-                "jobId": job_id,
+                "schemaVersion": identity["schemaVersion"],
+                "jobId": identity["jobId"] or job_id,
+                "taskType": identity["taskType"],
                 "status": WorkerStatus.ABANDONED,
+                "state": WorkerStatus.ABANDONED,
+                "stage": "abandoned",
                 "updatedAt": utc_now(),
+                "warningCount": 0,
+                "errorMessage": f"RUNNING marker exceeded {timeout_seconds} seconds.",
                 "error": {
                     "code": "RUNNING_TIMEOUT",
                     "message": f"RUNNING marker exceeded {timeout_seconds} seconds.",
@@ -339,21 +605,53 @@ def mark_abandoned_jobs(jobs_dir: Path, *, timeout_seconds: int) -> None:
         )
 
 
+def read_abandoned_job_identity(job_dir: Path) -> dict[str, object]:
+    """Best-effort schema/task metadata for stale RUNNING jobs."""
+
+    fallback: dict[str, object] = {
+        "schemaVersion": None,
+        "jobId": job_dir.name,
+        "taskType": None,
+    }
+    for filename in ("status.json", "request.json"):
+        path = job_dir / filename
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        schema_version = data.get("schemaVersion", fallback["schemaVersion"])
+        job_id = data.get("jobId", fallback["jobId"])
+        task_type = data.get("taskType", fallback["taskType"])
+        return {
+            "schemaVersion": schema_version,
+            "jobId": job_id if isinstance(job_id, str) else fallback["jobId"],
+            "taskType": task_type,
+        }
+    return fallback
+
+
 def write_failure_status(
     job_dir: Path,
     code: str,
     message: str,
     *,
+    request: WorkerRequest | None = None,
     attempt_id: str | None = None,
     attempt_stderr_path: Path | None = None,
 ) -> None:
     """Write a stable FAILED status.json."""
 
     payload: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": request.schema_version if request is not None else 1,
         "jobId": job_dir.name,
+        "taskType": request.task_type if request is not None else None,
         "status": WorkerStatus.FAILED,
+        "state": WorkerStatus.FAILED,
         "updatedAt": utc_now(),
+        "warningCount": 0,
+        "errorMessage": message,
         "error": {
             "code": code,
             "message": message,
@@ -367,6 +665,48 @@ def write_failure_status(
         }
         payload["error"]["attemptStderr"] = str(attempt_stderr_path)
     write_status(job_dir, payload)
+    write_terminal_marker(job_dir, WorkerStatus.FAILED)
+
+
+def write_running_status(
+    job_dir: Path,
+    request: WorkerRequest,
+    *,
+    stage: str | None,
+) -> None:
+    """Write a backward-compatible RUNNING status payload."""
+
+    now = utc_now()
+    write_status(
+        job_dir,
+        {
+            "schemaVersion": request.schema_version,
+            "jobId": request.job_id,
+            "taskType": request.task_type,
+            "status": WorkerStatus.RUNNING,
+            "state": WorkerStatus.RUNNING,
+            "stage": stage,
+            "progress": None,
+            "startedAt": now,
+            "updatedAt": now,
+            "warningCount": 0,
+            "errorMessage": None,
+        },
+    )
+
+
+def write_terminal_marker(job_dir: Path, status: WorkerStatus) -> None:
+    """Write terminal marker files without removing RUNNING claim evidence."""
+
+    if status not in {
+        WorkerStatus.SUCCEEDED,
+        WorkerStatus.NEEDS_REVIEW,
+        WorkerStatus.FAILED,
+        WorkerStatus.ABANDONED,
+    }:
+        return
+    marker = job_dir / status.value
+    marker.write_text(f"{status.value} at {utc_now()}\n", encoding="utf-8")
 
 
 def write_status(job_dir: Path, payload: dict[str, Any]) -> None:

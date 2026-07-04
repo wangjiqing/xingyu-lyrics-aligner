@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.0
+
+- Added Worker `schemaVersion: 2` with explicit `taskType` dispatch for
+  `LYRICS_ALIGNMENT` and `LYRIC_DRAFT_EXTRACTION`.
+- Preserved `schemaVersion: 1` as the v0.3.0 alignment request protocol.
+- Added Worker candidate lyric draft extraction, reusing the
+  `CandidateLyricsExtractionService` behind the existing `candidate extract`
+  command.
+- Added strict per-job path validation for `audioPath`, `lyricsPath`,
+  `sectionManifestPath`, `outputDir`, job ID matching, and symlink escapes.
+- Added draft extraction result validation for `transcript.cleaned.txt`,
+  `transcript.raw.txt`, `transcript.segments.json`, and `report.json`.
+- Added Worker intermediate vocals policy: cleaned by default, retained only
+  under `/jobs/{jobId}/intermediate` when `retainIntermediate` is true.
+- Updated the standard Docker image to install both `alignment` and
+  `candidate-lyrics` dependencies, including faster-whisper, Demucs, and
+  TorchCodec.
+- Pinned the final Docker CPU runtime to PyTorch 2.11 and TorchCodec 0.14 CPU
+  wheels so TorchCodec imports successfully in `python:3.11-slim-bookworm`.
+
 ## 0.3.0
 
 - Added the official CPU Docker image for `xingyu-align`.

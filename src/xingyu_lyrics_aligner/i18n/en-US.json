@@ -13,7 +13,7 @@
   "command.config.set_locale.help": "Save the default CLI locale.",
   "command.align.help": "Align trusted lyric lines directly with local WhisperX CTC.",
   "command.worker.help": "Run the optional shared-directory Docker worker.",
-  "command.worker.run.help": "Poll /jobs for READY alignment requests and write status.json results.",
+  "command.worker.run.help": "Poll /jobs for READY alignment or lyric-draft extraction requests and write status.json results.",
   "command.version.help": "Show the installed Xingyu Lyrics Aligner version.",
   "command.update.help": "Print or run the recommended package upgrade command.",
   "command.candidate.help": "Generate and review ASR candidate lyrics. Outputs are not trusted lyrics.",

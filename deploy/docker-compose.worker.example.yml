@@ -8,13 +8,15 @@
 
 services:
   xingyu-lyrics-aligner-worker:
-    image: ghcr.io/wangjiqing/xingyu-lyrics-aligner:${ALIGNER_IMAGE_TAG:-0.3.0}
+    image: ghcr.io/wangjiqing/xingyu-lyrics-aligner:${ALIGNER_IMAGE_TAG:-0.4.0}
     command:
       - xingyu-align
       - worker
       - run
       - --jobs-dir
       - /jobs
+      - --music-dir
+      - /music
       - --device
       - cpu
     restart: unless-stopped
