@@ -18,10 +18,10 @@ download or warm model files into `/models`.
 
 The final image pins the CPU PyTorch runtime to `torch==2.11.0+cpu`,
 `torchaudio==2.11.0+cpu`, `torchvision==0.26.0+cpu`, and
-`torchcodec==0.14.0+cpu` so TorchCodec loads without CUDA libraries. Build logs
-may show a WhisperX metadata warning because WhisperX 3.8.6 declares
-`torch~=2.8.0`; the Docker release smoke test imports WhisperX and TorchCodec
-after the final CPU runtime is installed.
+`torchcodec==0.14.0+cpu` with a `--no-deps` runtime override so TorchCodec
+loads without CUDA libraries. The project extras do not directly pin TorchCodec;
+the Docker image owns that runtime choice, and the Docker release smoke test
+imports WhisperX and TorchCodec after the final CPU runtime is installed.
 
 ```bash
 docker run --rm \

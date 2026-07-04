@@ -25,10 +25,10 @@ temporary disk than trusted-lyrics alignment.
 The Dockerfile finishes by reinstalling the CPU PyTorch runtime from the PyTorch
 CPU wheel index: `torch==2.11.0+cpu`, `torchaudio==2.11.0+cpu`,
 `torchvision==0.26.0+cpu`, and `torchcodec==0.14.0+cpu`. This is required so
-TorchCodec can load in the slim CPU image. WhisperX 3.8.6 still declares
-`torch~=2.8.0`, so Docker build logs may include a resolver warning; release
-smoke tests must verify `import whisperx` and `import torchcodec` in the final
-image.
+TorchCodec can load in the slim CPU image. The reinstall uses a `--no-deps`
+runtime override. Project extras do not directly pin TorchCodec; the standard
+Docker image owns that runtime choice, and release smoke tests must verify
+`import whisperx` and `import torchcodec` in the final image.
 
 ## Job Layout
 

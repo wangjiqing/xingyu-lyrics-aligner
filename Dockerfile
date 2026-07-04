@@ -31,7 +31,7 @@ COPY docker/entrypoint.sh /usr/local/bin/xingyu-aligner-entrypoint
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir ".[alignment,candidate-lyrics]" \
-    && python -m pip install --no-cache-dir --force-reinstall \
+    && python -m pip install --no-cache-dir --force-reinstall --no-deps \
       --index-url https://download.pytorch.org/whl/cpu \
       "torch==2.11.0+cpu" \
       "torchaudio==2.11.0+cpu" \
