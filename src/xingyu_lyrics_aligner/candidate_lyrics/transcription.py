@@ -17,6 +17,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
+from xingyu_lyrics_aligner.candidate_lyrics.config import (
+    DraftExtractionConfig,
+    resolve_draft_extraction_config,
+)
+
 _SUSPECTED_METADATA_RE = re.compile(
     r"^(?:[词詞]曲|作[词詞]|作曲|编曲|編曲|字幕|歌[词詞]|制作|製作|"
     r"op|sp|publisher|lyrics?|composer)(?=\s|[:：]|$)",
@@ -44,6 +49,8 @@ class CandidateLyricsExtractionRequest:
     retain_intermediate: bool = False
     intermediate_dir: Path | None = None
     task_type: str = "LYRIC_DRAFT_EXTRACTION"
+    requested_config: dict[str, object] = field(default_factory=dict)
+    resolved_config: DraftExtractionConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -124,10 +131,7 @@ class Transcriber(Protocol):
 
 def build_extract_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=(
-            "从歌曲音频分离人声并转写候选歌词。"
-            "输出不是可信歌词，也不会生成 SWLRC。"
-        )
+        description=("从歌曲音频分离人声并转写候选歌词。输出不是可信歌词，也不会生成 SWLRC。")
     )
     parser.add_argument("--audio", required=True, type=Path, help="输入歌曲音频文件。")
     parser.add_argument(
@@ -141,7 +145,15 @@ def build_extract_parser() -> argparse.ArgumentParser:
         default=None,
         help="可选 ASR 语言提示，例如 zh 或 en；省略时自动检测。",
     )
-    parser.add_argument("--model", default="medium", help="faster-whisper 模型名称。")
+    parser.add_argument("--model", default=None, help="faster-whisper 模型名称。")
+    parser.add_argument(
+        "--preset",
+        default=None,
+        help=(
+            "ASR 草稿提取预设：fast、recommended、high-quality、full-recognition。"
+            "显式 --model/--skip-separation/--no-vad 会覆盖预设。"
+        ),
+    )
     parser.add_argument(
         "--device",
         choices=["auto", "cpu", "cuda", "mps"],
@@ -151,11 +163,13 @@ def build_extract_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-separation",
         action="store_true",
+        default=None,
         help="跳过 Demucs，直接转写原始混音音频。",
     )
     parser.add_argument(
         "--no-vad",
         action="store_true",
+        default=None,
         help="关闭 faster-whisper VAD。默认开启，用于减少静音/间奏幻觉。",
     )
     parser.add_argument(
@@ -338,24 +352,67 @@ def extract_candidate_lyrics(
 ) -> dict[str, object]:
     """Extract candidate lyrics from audio and write local review artifacts."""
 
+    preset = getattr(args, "preset", None)
+    skip_separation = getattr(args, "skip_separation", None)
+    no_vad = getattr(args, "no_vad", None)
+    keep_intermediates = bool(getattr(args, "keep_intermediates", False))
+    retain_intermediate = resolve_cli_retain_intermediate(
+        preset=preset,
+        skip_separation=skip_separation,
+        keep_intermediates=keep_intermediates,
+    )
+    config = resolve_draft_extraction_config(
+        preset=getattr(args, "preset", None),
+        asr_model=args.model,
+        skip_separation=skip_separation,
+        vad_filter=None if no_vad is None else not no_vad,
+        condition_on_previous_text=args.condition_on_previous_text,
+        keep_suspected_metadata=args.keep_suspected_metadata,
+        retain_intermediate=retain_intermediate,
+    )
     request = CandidateLyricsExtractionRequest(
         audio_path=args.audio,
         output_dir=args.output_dir,
         language=args.language,
-        model=args.model,
+        model=config.asr_model,
         device=args.device,
-        skip_separation=args.skip_separation,
-        vad_filter=not args.no_vad,
-        condition_on_previous_text=args.condition_on_previous_text,
-        keep_suspected_metadata=args.keep_suspected_metadata,
+        skip_separation=config.skip_separation,
+        vad_filter=config.vad_filter,
+        condition_on_previous_text=config.condition_on_previous_text,
+        keep_suspected_metadata=config.keep_suspected_metadata,
         # Preserve the v0.3.0 CLI behavior: Demucs vocals.wav is kept by default.
         # Worker callers pass retain_intermediate explicitly and use job/intermediate.
-        retain_intermediate=True if not args.skip_separation else bool(args.keep_intermediates),
+        retain_intermediate=config.retain_intermediate,
         intermediate_dir=None,
         task_type="CANDIDATE_EXTRACT_CLI",
+        requested_config={
+            "preset": getattr(args, "preset", None),
+            "model": args.model,
+            "skipSeparation": skip_separation,
+            "vadFilter": None if no_vad is None else not no_vad,
+            "conditionOnPreviousText": args.condition_on_previous_text,
+            "keepSuspectedMetadata": args.keep_suspected_metadata,
+            "retainIntermediate": config.retain_intermediate,
+        },
+        resolved_config=config,
     )
     service = CandidateLyricsExtractionService(separator=separator, transcriber=transcriber)
     return service.extract(request).report
+
+
+def resolve_cli_retain_intermediate(
+    *,
+    preset: str | None,
+    skip_separation: bool | None,
+    keep_intermediates: bool,
+) -> bool | None:
+    """Preserve legacy CLI vocals behavior without overriding preset defaults."""
+
+    if preset is not None:
+        return True if keep_intermediates else None
+    if skip_separation is True:
+        return keep_intermediates
+    return True
 
 
 class CandidateLyricsExtractionService:
@@ -401,9 +458,7 @@ def extract_candidate_lyrics_request(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    warnings = [
-        "仅为 ASR 候选歌词。不要将此输出视为可信歌词，也不要直接作为 SWLRC 输入。"
-    ]
+    warnings = ["仅为 ASR 候选歌词。不要将此输出视为可信歌词，也不要直接作为 SWLRC 输入。"]
     started_at = time.perf_counter()
 
     intermediate_dir = (
@@ -459,8 +514,18 @@ def extract_candidate_lyrics_request(
             warnings.append(f"清理中间 vocals.wav 失败：{exc.__class__.__name__}")
         vocals_path = None
 
+    resolved_config = request.resolved_config or resolve_draft_extraction_config(
+        asr_model=request.model,
+        skip_separation=request.skip_separation,
+        vad_filter=request.vad_filter,
+        condition_on_previous_text=request.condition_on_previous_text,
+        keep_suspected_metadata=request.keep_suspected_metadata,
+        retain_intermediate=request.retain_intermediate,
+    )
     report: dict[str, object] = {
         "taskType": request.task_type,
+        "requestedConfig": request.requested_config,
+        "resolvedConfig": resolved_config.to_report_json(),
         "input_audio": str(audio_path),
         "output_dir": str(output_dir),
         "asr_model": request.model,

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 3,
+  "jobId": "job-001",
+  "taskType": "LYRIC_DRAFT_EXTRACTION",
+  "audioPath": "/music/artist/song.flac",
+  "outputDir": "/jobs/job-001/result",
+  "language": "zh",
+  "device": "cpu",
+  "preset": "RECOMMENDED",
+  "overrides": {
+    "asrModel": "large-v3",
+    "skipSeparation": false,
+    "vadFilter": false
+  },
+  "createdAt": "2026-07-08T00:00:00Z"
+}

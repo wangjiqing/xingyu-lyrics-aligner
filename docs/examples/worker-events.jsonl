@@ -1,0 +1,3 @@
+{"eventId":"20260708T100000Z-0001","timestamp":"2026-07-08T10:00:00Z","level":"INFO","type":"TASK_ACCEPTED","stage":null,"message":"Worker accepted the job.","details":{"requestSchemaVersion":3,"taskType":"LYRIC_DRAFT_EXTRACTION"}}
+{"eventId":"20260708T100310Z-0002","timestamp":"2026-07-08T10:03:10Z","level":"INFO","type":"STAGE_STARTED","stage":"TRANSCRIBING","message":"Started stage TRANSCRIBING.","details":{"model":"medium","skipSeparation":true,"vadFilter":true}}
+{"eventId":"20260708T100900Z-0003","timestamp":"2026-07-08T10:09:00Z","level":"INFO","type":"TASK_COMPLETED","stage":"FINALIZING","message":"Draft extraction job completed.","details":{"warningCount":1}}

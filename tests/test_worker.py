@@ -20,11 +20,14 @@ from xingyu_lyrics_aligner.schemas.alignment import (
     ReportDocument,
 )
 from xingyu_lyrics_aligner.worker import (
+    WorkerStage,
     WorkerStatus,
     WorkerTaskType,
     claim_next_job,
     mark_abandoned_jobs,
+    read_events_jsonl,
     run_worker,
+    write_running_status,
 )
 
 runner = CliRunner()
@@ -61,6 +64,51 @@ def test_worker_claims_legal_job_and_writes_succeeded(
     assert status["result"]["files"]["swlrc"] == str(job / "result" / "lyrics.swlrc")
     assert not (job / "READY").exists()
     assert (job / "RUNNING").exists()
+    assert status["statusSchemaVersion"] == 1
+    assert status["requestSchemaVersion"] == 1
+    assert status["progress"]["kind"] == "COMPLETE"
+    assert status["error"] is None
+    assert status["result"]["success"] is True
+    events = read_events_jsonl(job / "events.jsonl")
+    assert [event["type"] for event in events] == [
+        "TASK_ACCEPTED",
+        "STAGE_STARTED",
+        "STAGE_STARTED",
+        "STAGE_STARTED",
+        "TASK_COMPLETED",
+    ]
+
+
+def test_running_status_preserves_started_at_and_refreshes_stage_started_at(tmp_path: Path) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music, schema_version=2, task_type="LYRICS_ALIGNMENT")
+    claimed = claim_next_job(jobs)
+    assert claimed is not None
+
+    first = read_status(job)
+    write_running_status(job, claimed.request, stage=WorkerStage.ALIGNING)
+    second = read_status(job)
+    write_running_status(job, claimed.request, stage=WorkerStage.ALIGNING)
+    third = read_status(job)
+    write_running_status(job, claimed.request, stage=WorkerStage.QUALITY_CHECKING)
+    fourth = read_status(job)
+
+    assert first["startedAt"] == second["startedAt"] == third["startedAt"] == fourth["startedAt"]
+    assert second["stageStartedAt"] == third["stageStartedAt"]
+    assert fourth["stageStartedAt"] >= third["stageStartedAt"]
+    assert fourth["stage"] == "QUALITY_CHECKING"
+    assert fourth["heartbeatAt"] >= third["heartbeatAt"]
+
+
+def test_events_reader_ignores_incomplete_final_line(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+    events.write_text(
+        '{"type":"TASK_ACCEPTED","message":"ok"}\n{"type":"BROKEN"',
+        encoding="utf-8",
+    )
+
+    assert read_events_jsonl(events) == [{"type": "TASK_ACCEPTED", "message": "ok"}]
 
 
 def test_worker_marks_successful_low_quality_job_needs_review(
@@ -96,7 +144,26 @@ def test_v2_alignment_request_dispatches_to_alignment(
     status = read_status(job)
     assert status["status"] == WorkerStatus.SUCCEEDED
     assert status["taskType"] == WorkerTaskType.LYRICS_ALIGNMENT
-    assert status["stage"] == "completed"
+    assert status["stage"] == "FINALIZING"
+
+
+def test_v3_alignment_request_dispatches_to_alignment(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music, schema_version=3, task_type="LYRICS_ALIGNMENT")
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.worker.align_lyrics", fake_align_result(job))
+
+    run_worker(jobs_dir=jobs, music_dir=music, once=True)
+
+    status = read_status(job)
+    assert status["status"] == WorkerStatus.SUCCEEDED
+    assert status["requestSchemaVersion"] == 3
+    assert status["taskType"] == WorkerTaskType.LYRICS_ALIGNMENT
+    assert status["result"]["success"] is True
 
 
 def test_v2_alignment_failure_preserves_schema_and_task_type(
@@ -140,16 +207,82 @@ def test_v2_draft_extraction_dispatches_and_writes_outputs(
     assert status["status"] == WorkerStatus.SUCCEEDED
     assert status["state"] == WorkerStatus.SUCCEEDED
     assert status["taskType"] == WorkerTaskType.LYRIC_DRAFT_EXTRACTION
-    assert status["stage"] == "writing_result"
+    assert status["stage"] == "FINALIZING"
     assert (job / "SUCCEEDED").exists()
     assert not (job / "NEEDS_REVIEW").exists()
     assert (job / "result" / "transcript.cleaned.txt").read_text(encoding="utf-8") == "星语\n"
     assert (job / "result" / "transcript.raw.txt").read_text(encoding="utf-8") == "星语 raw\n"
     assert json.loads((job / "result" / "transcript.segments.json").read_text(encoding="utf-8"))
-    assert json.loads((job / "result" / "report.json").read_text(encoding="utf-8"))[
-        "taskType"
-    ] == "LYRIC_DRAFT_EXTRACTION"
+    assert (
+        json.loads((job / "result" / "report.json").read_text(encoding="utf-8"))["taskType"]
+        == "LYRIC_DRAFT_EXTRACTION"
+    )
     assert not (job / "intermediate" / "vocals.wav").exists()
+    assert status["requestedConfig"]["asrModel"] == "tiny"
+    assert status["resolvedConfig"]["asrModel"] == "tiny"
+
+
+def test_v3_draft_extraction_resolves_preset_and_overrides(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_draft_job(jobs, music, schema_version=3, preset="recommended")
+    request = json.loads((job / "request.json").read_text(encoding="utf-8"))
+    request["overrides"] = {
+        "asrModel": "large-v3",
+        "skipSeparation": False,
+        "vadFilter": False,
+    }
+    (job / "request.json").write_text(json.dumps(request), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.worker.CandidateLyricsExtractionService",
+        lambda: FakeDraftExtractionService(),
+    )
+
+    run_worker(jobs_dir=jobs, music_dir=music, once=True)
+
+    status = read_status(job)
+    report = json.loads((job / "result" / "report.json").read_text(encoding="utf-8"))
+    assert status["requestSchemaVersion"] == 3
+    assert status["requestedConfig"]["preset"] == "recommended"
+    assert status["resolvedConfig"]["preset"] == "RECOMMENDED"
+    assert status["resolvedConfig"]["asrModel"] == "large-v3"
+    assert status["resolvedConfig"]["skipSeparation"] is False
+    assert status["resolvedConfig"]["vadFilter"] is False
+    assert report["resolvedConfig"]["asr_model"] == "large-v3"
+
+
+def test_v3_draft_extraction_without_preset_accepts_pure_overrides(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_draft_job(jobs, music, schema_version=3)
+    request = json.loads((job / "request.json").read_text(encoding="utf-8"))
+    request["overrides"] = {"skipSeparation": False, "vadFilter": False}
+    (job / "request.json").write_text(json.dumps(request), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.worker.CandidateLyricsExtractionService",
+        lambda: FakeDraftExtractionService(),
+    )
+
+    run_worker(jobs_dir=jobs, music_dir=music, once=True)
+
+    status = read_status(job)
+    assert status["status"] == WorkerStatus.SUCCEEDED
+    assert status["requestedConfig"]["overrides"] == {
+        "skipSeparation": False,
+        "vadFilter": False,
+    }
+    assert status["resolvedConfig"]["preset"] is None
+    assert status["resolvedConfig"]["asrModel"] == "medium"
+    assert status["resolvedConfig"]["skipSeparation"] is False
+    assert status["resolvedConfig"]["vadFilter"] is False
 
 
 def test_draft_extraction_retain_intermediate_keeps_only_job_intermediate(
@@ -189,7 +322,7 @@ def test_draft_extraction_failure_writes_failed_and_stderr(
 
     status = read_status(job)
     assert status["status"] == WorkerStatus.FAILED
-    assert status["error"]["code"] == "CANDIDATE_EXTRACTION_FAILED"
+    assert status["error"]["code"] == "ASR_TRANSCRIPTION_FAILED"
     assert "asr failed" in status["error"]["message"]
     assert "RuntimeError: asr failed" in (job / "stderr.log").read_text(encoding="utf-8")
     assert not (job / "SUCCEEDED").exists()
@@ -425,6 +558,63 @@ def test_stale_running_job_is_marked_abandoned(tmp_path: Path) -> None:
     assert status["status"] == WorkerStatus.ABANDONED
     assert status["error"]["code"] == "RUNNING_TIMEOUT"
     assert (job / "ABANDONED").exists()
+    events = read_events_jsonl(job / "events.jsonl")
+    assert events[-1]["type"] == "TASK_ABANDONED"
+    assert events[-1]["details"]["timeoutSeconds"] == 1
+
+
+def test_terminal_status_without_previous_heartbeat_writes_non_null_heartbeat(
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    job = jobs / "job-001"
+    job.mkdir(parents=True)
+
+    from xingyu_lyrics_aligner.worker import build_status_payload
+
+    payload = build_status_payload(
+        job,
+        request=None,
+        state=WorkerStatus.FAILED,
+        stage=WorkerStage.FINALIZING,
+    )
+
+    assert isinstance(payload["heartbeatAt"], str)
+
+
+def test_fresh_heartbeat_prevents_old_running_marker_abandonment(tmp_path: Path) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music)
+    claimed = claim_next_job(jobs)
+    assert claimed is not None
+    running = job / "RUNNING"
+    old = time.time() - 10
+    os.utime(running, (old, old))
+
+    mark_abandoned_jobs(jobs, timeout_seconds=1)
+
+    assert (job / "RUNNING").exists()
+    assert not (job / "ABANDONED").exists()
+    assert read_status(job)["status"] == WorkerStatus.RUNNING
+
+
+def test_missing_or_damaged_status_falls_back_to_running_marker(tmp_path: Path) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music)
+    (job / "READY").unlink()
+    running = job / "RUNNING"
+    running.write_text("", encoding="utf-8")
+    old = time.time() - 10
+    os.utime(running, (old, old))
+    (job / "status.json").write_text("{not-json", encoding="utf-8")
+
+    mark_abandoned_jobs(jobs, timeout_seconds=1)
+
+    status = read_status(job)
+    assert status["status"] == WorkerStatus.ABANDONED
+    assert status["error"]["code"] == "RUNNING_TIMEOUT"
 
 
 def test_v2_stale_running_job_preserves_schema_and_task_type(tmp_path: Path) -> None:
@@ -443,7 +633,7 @@ def test_v2_stale_running_job_preserves_schema_and_task_type(tmp_path: Path) -> 
     assert status["schemaVersion"] == 2
     assert status["taskType"] == WorkerTaskType.LYRIC_DRAFT_EXTRACTION
     assert status["status"] == WorkerStatus.ABANDONED
-    assert status["stage"] == "abandoned"
+    assert status["stage"] == "FINALIZING"
 
 
 def create_job(
@@ -490,7 +680,9 @@ def create_draft_job(
     *,
     audio_path: Path | None = None,
     output_dir: Path | None = None,
+    schema_version: int = 2,
     task_type: str = "LYRIC_DRAFT_EXTRACTION",
+    preset: str | None = None,
     retain_intermediate: bool = False,
 ) -> Path:
     job = jobs / "job-001"
@@ -501,21 +693,26 @@ def create_draft_job(
     if audio == music / "song.flac":
         audio.write_bytes(b"fake")
     request = {
-        "schemaVersion": 2,
+        "schemaVersion": schema_version,
         "jobId": "job-001",
         "taskType": task_type,
         "audioPath": str(audio),
         "outputDir": str(output),
         "language": "zh",
         "device": "cpu",
-        "asrModel": "tiny",
-        "skipSeparation": False,
-        "vadFilter": True,
-        "conditionOnPreviousText": False,
-        "keepSuspectedMetadata": False,
-        "retainIntermediate": retain_intermediate,
         "createdAt": "2026-07-04T00:00:00Z",
     }
+    if schema_version == 3:
+        request["preset"] = preset
+        if retain_intermediate:
+            request["overrides"] = {"retainIntermediate": True}
+    else:
+        request["asrModel"] = "tiny"
+        request["skipSeparation"] = False
+        request["vadFilter"] = True
+        request["conditionOnPreviousText"] = False
+        request["keepSuspectedMetadata"] = False
+        request["retainIntermediate"] = retain_intermediate
     (job / "request.json").write_text(json.dumps(request), encoding="utf-8")
     (job / "READY").write_text("", encoding="utf-8")
     return job
@@ -602,6 +799,10 @@ class FakeDraftExtractionService:
         )
         report = {
             "taskType": "LYRIC_DRAFT_EXTRACTION",
+            "requestedConfig": request.requested_config,
+            "resolvedConfig": request.resolved_config.to_report_json()
+            if request.resolved_config is not None
+            else {},
             "asr_model": request.model,
             "separation_enabled": not request.skip_separation,
             "asr_options": {"vad_filter": request.vad_filter},

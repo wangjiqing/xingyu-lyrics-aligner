@@ -30,10 +30,12 @@ SWLRC and do not replace the trusted-lyrics alignment flow.
 
 - `cli.py`: Typer commands, option parsing, and human-readable output.
 - `worker.py`: shared-directory protocol, atomic job claiming, path validation,
-  status writes, and task dispatch.
+  status/event writes, heartbeat-based stale detection, and task dispatch.
 - `alignment/`: trusted-lyrics alignment pipeline and LRC/SWLRC exporters.
 - `candidate_lyrics/transcription.py`: reusable candidate lyric extraction
   service used by both CLI and Worker.
+- `candidate_lyrics/config.py`: shared draft extraction preset and override
+  resolver used by both CLI and Worker.
 - `candidate_lyrics/script_normalization.py`: optional Simplified/Traditional
   review-copy generation for candidate text.
 - `schemas/`: structured alignment, manifest, and report models.
@@ -48,7 +50,8 @@ delegates to `CandidateLyricsExtractionService`, which is also used by
 ## Worker Protocol Boundary
 
 `schemaVersion: 1` is preserved for v0.3.0 alignment jobs. `schemaVersion: 2`
-requires `taskType` and supports:
+requires `taskType`. `schemaVersion: 3` adds draft extraction `preset` and
+`overrides` while keeping v1/v2 compatibility. Supported task types are:
 
 - `LYRICS_ALIGNMENT`
 - `LYRIC_DRAFT_EXTRACTION`
@@ -62,6 +65,11 @@ Path validation is intentionally stricter than the general CLI:
 
 This lets the Worker run inside Docker with `/music` read-only and `/jobs` plus
 `/models` writable, without exposing ports or mounting the Docker socket.
+
+`status.json` is the single current-state snapshot and is written atomically.
+`events.jsonl` is an append-only lifecycle stream. Stale detection prefers
+`status.json.heartbeatAt` and falls back to the legacy `RUNNING` marker mtime
+only when status is missing or damaged.
 
 ## Local Data Directories
 

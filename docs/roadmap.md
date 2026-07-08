@@ -1,5 +1,17 @@
 # Roadmap
 
+## v0.5.0 Worker Observability
+
+- Make `status.json` the single authoritative Worker state snapshot.
+- Add append-only `events.jsonl` lifecycle events.
+- Add stable Worker state, stage, progress, attempt, warning, result, and error
+  fields for Xingyu Audio Library integration.
+- Prefer `heartbeatAt` over the legacy `RUNNING` marker mtime for stale-job
+  detection.
+- Add draft extraction presets and shared CLI/Worker config resolution.
+- Keep this release out of WebSocket/SSE, scheduler, retry queue, frontend task
+  detail, model download UI, bulk jobs, and new alignment algorithms.
+
 ## v0.1.0 Bootstrap
 
 - Establish Python package structure and CLI entrypoint.

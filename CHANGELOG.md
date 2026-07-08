@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0
+
+- Added Worker `schemaVersion: 3` for `LYRIC_DRAFT_EXTRACTION` preset and
+  advanced override configuration while preserving schema v1/v2 compatibility.
+- Upgraded `status.json` into the single authoritative current-state snapshot
+  with `statusSchemaVersion`, `requestSchemaVersion`, stable `state` and
+  `stage`, attempt metadata, `startedAt`, `stageStartedAt`, `updatedAt`,
+  `heartbeatAt`, `requestedConfig`, `resolvedConfig`, `warnings`, `error`, and
+  `result`.
+- Added append-only `/jobs/{jobId}/events.jsonl` lifecycle events for task
+  acceptance, stage changes, terminal states, warnings, failures, and abandoned
+  jobs.
+- Changed stale-job detection to prefer `status.json.heartbeatAt`, using the
+  older `RUNNING` marker mtime only as a compatibility fallback.
+- Added shared ASR draft extraction config resolution for CLI and Worker,
+  including `FAST`, `RECOMMENDED`, `HIGH_QUALITY`, and `FULL_RECOGNITION`
+  presets plus explicit override handling that preserves `false` values.
+- Wrote requested and resolved draft extraction config into Worker status and
+  candidate draft reports.
+- Documented Worker status/events semantics, stage enums, error codes, preset
+  behavior, schema compatibility, and the no-fake-progress rule.
+
 ## 0.4.0
 
 - Added Worker `schemaVersion: 2` with explicit `taskType` dispatch for
