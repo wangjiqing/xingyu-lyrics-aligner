@@ -1,7 +1,8 @@
 # Docker Runtime
 
-The official v0.4.0 image is a CPU-oriented Worker and CLI image. It can run
-both trusted-lyrics alignment and candidate lyric draft extraction.
+The official v0.5.0 image is a CPU-oriented Worker and CLI image. It can run
+both trusted-lyrics alignment and candidate lyric draft extraction, and the
+Worker writes observable `status.json` and `events.jsonl` task state.
 
 ```text
 ghcr.io/wangjiqing/xingyu-lyrics-aligner
@@ -11,7 +12,7 @@ docker.io/wangjiqing/xingyu-lyrics-aligner
 Release tags are published as a multi-architecture manifest for `linux/amd64`
 and `linux/arm64`. Apple Silicon Macs pull the ARM64 image by default.
 
-The v0.4.0 image installs `.[alignment,candidate-lyrics]`, including
+The v0.5.0 image installs `.[alignment,candidate-lyrics]`, including
 faster-whisper, Demucs, TorchCodec, and their runtime dependencies. It is larger
 than v0.3.0. The image does not download models during build; first use may
 download or warm model files into `/models`.
@@ -29,7 +30,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align doctor
 ```
 
@@ -41,7 +42,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu
 ```
 
@@ -53,7 +54,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align align \
     --audio /music/song.flac \
     --lyrics /jobs/job-001/trusted-lyrics.txt \

@@ -2,12 +2,13 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.4.0
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.5.0
 aligns local audio against user-provided lyric lines, defines SWLRC v1, keeps
 optional ASR candidate-lyrics extraction for manual review, and adds an official
 CPU Docker image plus an optional shared-directory Worker for Docker Compose
 integrations. The Worker can also extract unaligned candidate lyric drafts from
-audio for later human correction.
+audio for later human correction, while exposing stable status, stage,
+heartbeat, event, configuration, result, and error snapshots for upper systems.
 
 The recommended user command is:
 
@@ -18,7 +19,7 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.4.0 Can Do
+## What v0.5.0 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
@@ -30,6 +31,8 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
   for Xingyu Audio Library Docker Compose deployments.
 - Let the Worker process `LYRIC_DRAFT_EXTRACTION` jobs that turn audio into
   unaligned candidate lyric drafts for manual editing.
+- Expose Worker state through `/jobs/{jobId}/status.json` and lifecycle events
+  through `/jobs/{jobId}/events.jsonl`.
 - Define and validate SWLRC v1, an enhanced character-/word-level timed lyrics
   format for Xingyu Audio Library and Xingyu Music Box.
 - Optionally extract ASR candidate lyrics from audio through Demucs vocals
@@ -44,7 +47,7 @@ xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 - The CLI does not fetch public lyrics, rewrite user lyrics, or upload audio.
 - Demucs is used only by the optional candidate-lyrics workflow. UVR, GUI,
   database, HTTP services, message queues, and Docker socket access are out of
-  scope for v0.4.0.
+  scope for v0.5.0.
 - The default CLI path does not start a long-running process. The Docker Worker
   is an optional deployment adapter for shared-directory integrations.
 - macOS MPS may fall back to CPU for WhisperX alignment.
@@ -72,16 +75,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-Install directly from the GitHub v0.4.0 tag:
+Install directly from the GitHub v0.5.0 tag:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.4.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.4.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0
 ```
 
 Include optional candidate-lyrics dependencies:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.4.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.4.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0 --candidate-lyrics
 ```
 
 To choose and save the default CLI language during install:
@@ -126,7 +129,7 @@ Update from GitHub:
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.4.0 --run
+xingyu-align update --candidate-lyrics --ref v0.5.0 --run
 ```
 
 ## Manual Development Install
@@ -228,7 +231,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 GHCR is the primary example registry in this README. Release tags are mirrored to
-Docker Hub with the same version tags: `0.4.0`, `0.4`, `latest`, and `v0.4.0`.
+Docker Hub with the same version tags: `0.5.0`, `0.5`, `latest`, and `v0.5.0`.
 Images are published for `linux/amd64` and `linux/arm64`; Apple Silicon Macs pull
 the ARM64 image by default.
 
@@ -239,7 +242,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align doctor
 ```
 
@@ -250,7 +253,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align models pull --language zh --device cpu
 ```
 
@@ -261,7 +264,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align align \
     --audio /music/song.flac \
     --lyrics /jobs/job-001/trusted-lyrics.txt \
@@ -283,7 +286,7 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
 ## Docker Worker
 
 For Xingyu Audio Library Docker Compose deployments, the optional Worker can poll
-a shared jobs directory. v0.4.0 supports two task types:
+a shared jobs directory. v0.5.0 supports two task types:
 
 - `LYRICS_ALIGNMENT`: trusted lyrics + audio -> `alignment.json`, LRC, SWLRC.
 - `LYRIC_DRAFT_EXTRACTION`: audio -> unaligned ASR candidate lyric text for
@@ -293,12 +296,22 @@ a shared jobs directory. v0.4.0 supports two task types:
 xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu
 ```
 
-Schema v1 requests remain alignment jobs. Schema v2 requests must include
-`taskType`. The Worker claims jobs by exclusively creating `RUNNING`, then
-removing `READY`; writes `status.json` via temp file plus atomic rename; keeps
-per-attempt stderr logs; and writes terminal markers such as `SUCCEEDED`,
+Schema v1 requests remain alignment jobs. Schema v2 requests remain supported.
+Schema v3 adds draft-extraction `preset` and `overrides`. The Worker claims jobs
+by exclusively creating `RUNNING`, then removing `READY`; writes `status.json`
+via temp file plus flush, fsync, and atomic rename; appends `events.jsonl`;
+keeps per-attempt stderr logs; and writes terminal markers such as `SUCCEEDED`,
 `FAILED`, `NEEDS_REVIEW`, or `ABANDONED`. Draft extraction never writes
 `NEEDS_REVIEW`; manual lyric review belongs to the audio-library workflow.
+
+`status.json` is the only current-state snapshot. It includes stable fields such
+as `statusSchemaVersion`, `requestSchemaVersion`, `state`, `stage`, `startedAt`,
+`stageStartedAt`, `updatedAt`, `heartbeatAt`, `requestedConfig`,
+`resolvedConfig`, `warnings`, `error`, and `result`. `events.jsonl` is an
+append-only lifecycle stream for state transitions and warnings; it is not a
+replacement for `stderr.log` or `attempts/{attemptId}.stderr.log`. Slow jobs
+should be treated as alive while `heartbeatAt` is fresh. The Worker does not
+invent percentage progress when the underlying model cannot report it safely.
 
 Draft extraction writes `transcript.cleaned.txt`, `transcript.raw.txt`,
 `transcript.segments.json`, and `report.json` under `/jobs/{jobId}/result`.
@@ -308,7 +321,7 @@ By default, Worker vocals intermediates are cleaned after the attempt. With
 
 The Worker only reads `/music` paths and writes `/jobs` and `/models` paths. It
 is not an HTTP service, opens no ports, uses no database or message queue, and
-does not mount `/var/run/docker.sock`. The v0.4.0 image installs alignment and
+does not mount `/var/run/docker.sock`. The v0.5.0 image installs alignment and
 candidate-lyrics dependencies, including faster-whisper, Demucs, and TorchCodec,
 so it is larger than v0.3.0. First use may download or warm models; CPU draft
 extraction is much slower and uses more temporary disk than alignment. See
@@ -331,12 +344,22 @@ xingyu-align candidate extract \
   --audio "/path/to/song.flac" \
   --output-dir "/path/to/prelyrics" \
   --language zh \
-  --model medium
+  --preset recommended
 ```
 
 This writes `vocals.wav`, `transcript.raw.txt`, `transcript.segments.json`,
 `transcript.cleaned.txt`, and `report.json`. Use `--skip-separation` to skip
 Demucs and transcribe the original mix directly.
+
+Draft extraction presets are `fast`, `recommended`, `high-quality`, and
+`full-recognition`. `fast` uses a smaller ASR model and skips separation;
+`recommended` uses `medium`, skips separation, and keeps VAD on; `high-quality`
+uses `medium` with vocal separation; `full-recognition` keeps separation but
+disables VAD to avoid filtering weak vocals, speech, or non-standard fragments.
+`full-recognition` is not an absolute "most accurate" mode. Advanced options
+such as `--model large-v3`, `--skip-separation`, and `--no-vad` override the
+preset. `large-v3` remains available as an advanced model name, but it is not in
+the normal presets because it is slower and uses more memory and disk.
 
 Generate Simplified or Traditional Chinese review copies:
 

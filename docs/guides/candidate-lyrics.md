@@ -25,7 +25,7 @@ xingyu-align candidate extract \
   --audio "/path/to/song.flac" \
   --output-dir "/path/to/output" \
   --language zh \
-  --model medium
+  --preset recommended
 ```
 
 输出文件：
@@ -36,11 +36,20 @@ xingyu-align candidate extract \
 - `transcript.cleaned.txt`：基础清洗后的候选歌词文本；
 - `report.json`：输入、模型、语言、ASR 参数、是否人声分离、疑似署名片段和 warning。
 
-默认行为：
+默认行为与预设：
 
-- 使用 Demucs 分离人声；
+- 不传 `--preset` 时保留旧 CLI 等价行为：`medium`、启用 Demucs 分离、开启 VAD；
+- `fast`：`small`，跳过分离，开启 VAD，适合快速粗看；
+- `recommended`：`medium`，跳过分离，开启 VAD，适合常规草稿；
+- `high-quality`：`medium`，启用分离，开启 VAD，适合伴奏较重的歌曲；
+- `full-recognition`：`medium`，启用分离，关闭 VAD，尽量减少弱人声、念白和非标准片段被过滤。
+
+`full-recognition` 不等于绝对最高准确度；它只是更少过滤。`large-v3` 不进入普通预设，
+但仍可通过 `--model large-v3` 作为高级参数使用，代价是更慢、内存和磁盘占用更高。
+
+通用默认：
+
 - 使用 faster-whisper 转写；
-- 开启 VAD，减少静音、间奏和残响幻觉；
 - 关闭 previous-text conditioning，减少跨段续写幻觉；
 - 从 `transcript.cleaned.txt` 中剔除疑似 `词曲`、`作词`、`作曲`、`字幕` 等非歌词署名片段；
 - 原始内容仍保留在 `transcript.raw.txt` 与 `transcript.segments.json` 中。
@@ -49,8 +58,22 @@ xingyu-align candidate extract \
 
 - `--skip-separation`：跳过 Demucs，直接转写原音频；
 - `--no-vad`：关闭 faster-whisper VAD；
+- `--model`：覆盖 preset 中的 ASR 模型；
 - `--condition-on-previous-text`：允许 ASR 参考前文继续生成；
 - `--keep-suspected-metadata`：在 cleaned 文本中保留疑似署名片段。
+
+解析优先级是：预设默认值 < 显式高级参数。也就是说：
+
+```bash
+xingyu-align candidate extract \
+  --audio "/path/to/song.flac" \
+  --output-dir "/path/to/output" \
+  --preset high-quality \
+  --model large-v3 \
+  --no-vad
+```
+
+会先采用 `high-quality`，再用 `large-v3` 和关闭 VAD 覆盖预设。
 
 ## 生成简体副本
 

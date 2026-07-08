@@ -12,6 +12,7 @@ import typer
 
 from xingyu_lyrics_aligner import __version__
 from xingyu_lyrics_aligner.alignment.models import alignment_model_status, pull_alignment_model
+from xingyu_lyrics_aligner.candidate_lyrics.config import DraftConfigError
 from xingyu_lyrics_aligner.candidate_lyrics.script_normalization import (
     ScriptNormalizationError,
     normalize_transcript_script,
@@ -233,21 +234,25 @@ def candidate_extract(
         typer.Option("--language", help=_("option.language.help")),
     ] = None,
     model: Annotated[
-        str,
+        str | None,
         typer.Option("--model", help=_("option.candidate_model.help")),
-    ] = "medium",
+    ] = None,
+    preset: Annotated[
+        str | None,
+        typer.Option("--preset", help=_("option.candidate_preset.help")),
+    ] = None,
     device: Annotated[
         DeviceStrategy,
         typer.Option("--device", help=_("option.device.help")),
     ] = DeviceStrategy.AUTO,
     skip_separation: Annotated[
-        bool,
+        bool | None,
         typer.Option("--skip-separation", help=_("option.candidate_skip_separation.help")),
-    ] = False,
+    ] = None,
     no_vad: Annotated[
-        bool,
+        bool | None,
         typer.Option("--no-vad", help=_("option.candidate_no_vad.help")),
-    ] = False,
+    ] = None,
     condition_on_previous_text: Annotated[
         bool,
         typer.Option(
@@ -274,6 +279,7 @@ def candidate_extract(
         output_dir=output_dir,
         language=language,
         model=model,
+        preset=preset,
         device=device.value,
         skip_separation=skip_separation,
         no_vad=no_vad,
@@ -283,7 +289,7 @@ def candidate_extract(
     )
     try:
         report = extract_candidate_lyrics(args)
-    except CandidateLyricsError as exc:
+    except (CandidateLyricsError, DraftConfigError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     typer.echo(_("candidate.extract.completed", path=_candidate_cleaned_output(report)))

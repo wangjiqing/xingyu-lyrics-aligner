@@ -1,0 +1,44 @@
+{
+  "statusSchemaVersion": 1,
+  "requestSchemaVersion": 3,
+  "schemaVersion": 3,
+  "jobId": "job-001",
+  "taskType": "LYRIC_DRAFT_EXTRACTION",
+  "status": "RUNNING",
+  "state": "RUNNING",
+  "stage": "TRANSCRIBING",
+  "startedAt": "2026-07-08T10:00:00Z",
+  "stageStartedAt": "2026-07-08T10:03:10Z",
+  "updatedAt": "2026-07-08T10:04:25Z",
+  "heartbeatAt": "2026-07-08T10:04:25Z",
+  "progress": {
+    "kind": "INDETERMINATE",
+    "current": null,
+    "total": null,
+    "fraction": null
+  },
+  "attempt": {
+    "id": "20260708T100000Z-10001-123456789",
+    "number": 1,
+    "stderrPath": "attempts/20260708T100000Z-10001-123456789.stderr.log"
+  },
+  "requestedConfig": {
+    "preset": "RECOMMENDED"
+  },
+  "resolvedConfig": {
+    "preset": "RECOMMENDED",
+    "asrModel": "medium",
+    "skipSeparation": true,
+    "vadFilter": true,
+    "conditionOnPreviousText": false,
+    "keepSuspectedMetadata": false,
+    "retainIntermediate": false,
+    "device": "cpu",
+    "language": "zh"
+  },
+  "warnings": [],
+  "warningCount": 0,
+  "errorMessage": null,
+  "error": null,
+  "result": null
+}

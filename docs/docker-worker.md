@@ -1,8 +1,9 @@
 # Docker Worker Protocol
 
-v0.4.0 extends the shared-directory Worker with candidate lyric draft
-extraction. The Worker remains a local executor: it exposes no HTTP port, uses
-no database or message queue, and does not need the Docker socket.
+v0.5.0 makes the shared-directory Worker observable while preserving candidate
+lyric draft extraction from v0.4.0. The Worker remains a local executor: it
+exposes no HTTP port, uses no database or message queue, and does not need the
+Docker socket.
 
 ## Mounted Paths
 
@@ -16,7 +17,7 @@ The container runs as UID/GID `10001:10001`. The host `/jobs` and `/models`
 directories must be writable by that user, or the Compose service must set a
 compatible `user:`. `/music` should be mounted read-only.
 
-The v0.4.0 standard image installs both alignment and candidate-lyrics
+The v0.5.0 standard image installs both alignment and candidate-lyrics
 dependencies, including faster-whisper, Demucs, TorchCodec, and their runtime
 dependencies. It is larger than v0.3.0. First use may download or warm model
 files into `/models`, and CPU draft extraction is much slower and uses more
@@ -43,6 +44,7 @@ Alignment jobs:
   RUNNING
   SUCCEEDED | NEEDS_REVIEW | FAILED | ABANDONED
   status.json
+  events.jsonl
   stderr.log
   attempts/
   result/
@@ -61,6 +63,7 @@ Candidate lyric draft extraction jobs:
   RUNNING
   SUCCEEDED | FAILED | ABANDONED
   status.json
+  events.jsonl
   stderr.log
   attempts/
   intermediate/
@@ -148,6 +151,49 @@ editing. It does not produce LRC, SWLRC, or trusted lyrics.
 }
 ```
 
+### schemaVersion 3 Draft Extraction
+
+Schema v3 keeps v1/v2 compatibility and adds a preset plus explicit advanced
+overrides for `LYRIC_DRAFT_EXTRACTION`. Unknown fields, invalid presets, and
+invalid override value types fail before execution with stable error codes.
+See also [worker-draft-request-v3.json](examples/worker-draft-request-v3.json).
+
+```json
+{
+  "schemaVersion": 3,
+  "jobId": "job-001",
+  "taskType": "LYRIC_DRAFT_EXTRACTION",
+  "audioPath": "/music/artist/song.flac",
+  "outputDir": "/jobs/job-001/result",
+  "language": "zh",
+  "device": "cpu",
+  "preset": "RECOMMENDED",
+  "overrides": {
+    "asrModel": "large-v3",
+    "skipSeparation": false,
+    "vadFilter": false
+  },
+  "createdAt": "2026-07-08T00:00:00Z"
+}
+```
+
+Preset defaults:
+
+| Preset | ASR model | Vocal separation | VAD |
+| --- | --- | --- | --- |
+| `FAST` | `small` | skipped | enabled |
+| `RECOMMENDED` | `medium` | skipped | enabled |
+| `HIGH_QUALITY` | `medium` | enabled | enabled |
+| `FULL_RECOGNITION` | `medium` | enabled | disabled |
+
+Resolution order is preset defaults, then explicit user overrides, then Worker
+runtime constraints such as the `--device` override. The Worker writes both
+`requestedConfig` and `resolvedConfig` to `status.json`; candidate draft
+`report.json` also records the same resolved execution choices. v1/v2 draft
+requests without a preset keep the old equivalent behavior: `medium`, vocal
+separation enabled, VAD enabled. `large-v3` remains an advanced override; it is
+slower and heavier, so it is not part of the normal presets.
+
 ## Path Rules
 
 The Worker validates paths after claiming and before execution:
@@ -166,28 +212,101 @@ outside the current job directory.
 
 ## Status Contract
 
-`status.json` is always machine-readable JSON. It is written to a temporary file
-in the same directory, flushed, fsynced, and atomically renamed into place.
-Readers should accept additional fields.
+`status.json` is the only authoritative current-state snapshot. There is no
+separate `progress.json`. The file is always machine-readable JSON and is
+written to a temporary file in the same directory, flushed, fsynced, and
+atomically renamed into place. Readers should accept additional fields.
 
-Running status includes both the older `status` field and the v0.4.0 `state`
-field:
+Running status includes both the older `status` field and the v0.5.0 `state`
+field for compatibility:
 
 ```json
 {
+  "statusSchemaVersion": 1,
+  "requestSchemaVersion": 3,
   "schemaVersion": 2,
   "jobId": "job-001",
   "taskType": "LYRIC_DRAFT_EXTRACTION",
   "status": "RUNNING",
   "state": "RUNNING",
-  "stage": "transcribing",
-  "progress": null,
-  "startedAt": "2026-07-04T00:00:00Z",
-  "updatedAt": "2026-07-04T00:00:00Z",
+  "stage": "TRANSCRIBING",
+  "startedAt": "2026-07-08T10:00:00Z",
+  "stageStartedAt": "2026-07-08T10:03:10Z",
+  "updatedAt": "2026-07-08T10:04:25Z",
+  "heartbeatAt": "2026-07-08T10:04:25Z",
+  "progress": {
+    "kind": "INDETERMINATE",
+    "current": null,
+    "total": null,
+    "fraction": null
+  },
+  "attempt": {
+    "id": "20260708T100000Z-10001-123456789",
+    "number": 1,
+    "stderrPath": "attempts/20260708T100000Z-10001-123456789.stderr.log"
+  },
+  "requestedConfig": {
+    "preset": "RECOMMENDED"
+  },
+  "resolvedConfig": {
+    "preset": "RECOMMENDED",
+    "asrModel": "medium",
+    "skipSeparation": true,
+    "vadFilter": true,
+    "device": "cpu",
+    "language": "zh"
+  },
+  "warnings": [],
   "warningCount": 0,
-  "errorMessage": null
+  "errorMessage": null,
+  "error": null,
+  "result": null
 }
 ```
+
+Time semantics:
+
+- `startedAt` is when the current attempt started; stage changes do not refresh
+  it.
+- `stageStartedAt` changes only when `stage` changes.
+- `updatedAt` is the last status write time.
+- `heartbeatAt` is the last time the Worker confirmed the attempt was alive.
+
+Stable states are `QUEUED` for callers before `READY`, then Worker-written
+`RUNNING`, `SUCCEEDED`, `NEEDS_REVIEW`, `FAILED`, and `ABANDONED`. The Worker
+defines `QUEUED` for the shared protocol but does not write it itself; an upper
+system may write `QUEUED` before creating `READY`. Current Worker stages are
+machine codes, not localized text:
+
+- Alignment: `VALIDATING_REQUEST`, `PREPARING_INPUT`,
+  `LOADING_ALIGNMENT_MODEL`, `PREPARING_ALIGNMENT_TEXT`, `ALIGNING`,
+  `EXPORTING_OUTPUTS`, `QUALITY_CHECKING`, `FINALIZING`.
+- Draft extraction: `VALIDATING_REQUEST`, `PREPARING_AUDIO`,
+  `SEPARATING_VOCALS`, `LOADING_ASR_MODEL`, `TRANSCRIBING`,
+  `POSTPROCESSING_TRANSCRIPT`, `WRITING_OUTPUTS`, `FINALIZING`.
+
+The implementation uses the subset it can observe safely. `DOWNLOADING_MODEL`
+is intentionally absent until the Worker can distinguish download from slow
+model loading. Progress is `INDETERMINATE` unless a backend provides truthful
+progress; v0.5.0 does not hard-code fake 20/50/80 percent values.
+
+`events.jsonl` is an append-only lifecycle event stream. Each line is an
+independent JSON object:
+
+```json
+{"eventId":"20260708T100425Z-0001","timestamp":"2026-07-08T10:04:25Z","level":"INFO","type":"STAGE_STARTED","stage":"TRANSCRIBING","message":"Started stage TRANSCRIBING.","details":{"model":"medium","vadFilter":true}}
+```
+
+Readers should ignore an incomplete final line. Event types are stable:
+`TASK_ACCEPTED`, `STAGE_STARTED`, `STAGE_PROGRESS`, `WARNING`,
+`TASK_COMPLETED`, `TASK_NEEDS_REVIEW`, `TASK_FAILED`, and `TASK_ABANDONED`.
+Events are not a stderr replacement; keep reading `stderr.log` or the attempt
+stderr for diagnostics.
+
+Example files:
+
+- [worker-status-running-v1.json](examples/worker-status-running-v1.json)
+- [worker-events.jsonl](examples/worker-events.jsonl)
 
 Alignment success writes the same payload shape as `xingyu-align align
 --json-result` under `result` and verifies `alignment.json`, `lyrics.lrc`,
@@ -210,11 +329,36 @@ through the host volume mount when reading files outside the container.
 Failures keep tracebacks in `attempts/{attemptId}.stderr.log`, refresh
 `stderr.log` as the latest-attempt convenience copy, and write structured
 failure status. A retry can overwrite `stderr.log`, but previous attempt logs
-are kept.
+are kept. The user-facing `error.message` is a short stable summary, not a raw
+Python traceback.
+
+```json
+{
+  "code": "ASR_TRANSCRIPTION_FAILED",
+  "message": "ASR transcription failed while processing the audio.",
+  "retryable": false,
+  "suggestedAction": "Inspect the source audio or try a different extraction preset.",
+  "stderrPath": "stderr.log",
+  "attemptStderrPath": "attempts/attempt-id.stderr.log"
+}
+```
+
+Current stable error code domains include request validation
+(`REQUEST_INVALID`, `REQUEST_INVALID_JSON`, `TASK_TYPE_MISSING`,
+`UNKNOWN_TASK_TYPE`, `UNSUPPORTED_SCHEMA`, `INVALID_PRESET`), path validation
+(`PATH_NOT_ABSOLUTE`, `PATH_MISSING`, `PATH_NOT_FILE`,
+`PATH_OUTSIDE_ALLOWED_ROOT`, `OUTPUT_DIR_INVALID`), runtime failures
+(`MODEL_LOAD_FAILED`, `MODEL_NOT_AVAILABLE`, `VOCAL_SEPARATION_FAILED`,
+`ASR_TRANSCRIPTION_FAILED`, `ALIGNMENT_FAILED`, `OUTPUT_WRITE_FAILED`,
+`OUTPUT_MISSING`, `QUALITY_CHECK_FAILED`, `INTERNAL_ERROR`), and lifecycle
+timeouts (`RUNNING_TIMEOUT`).
 
 Stale `RUNNING` jobs are marked `ABANDONED` after
-`--running-timeout-seconds`. They are not retried automatically; the caller
-should create a new job directory if a retry is desired.
+`--running-timeout-seconds`. The check first uses `status.json.heartbeatAt`; the
+older `RUNNING` marker mtime is only a compatibility fallback for missing or
+damaged status files. A long model call with a fresh heartbeat is considered
+alive. Abandoned jobs are not retried automatically; the caller should create a
+new job directory if a retry is desired.
 
 ## Compose And Regression
 
@@ -222,18 +366,18 @@ Start from [deploy/docker-compose.worker.example.yml](../deploy/docker-compose.w
 and [deploy/.env.worker.example](../deploy/.env.worker.example).
 
 ```bash
-docker build -t wangjiqing/xingyu-lyrics-aligner:0.4.0 .
+docker build -t wangjiqing/xingyu-lyrics-aligner:0.5.0 .
 
 docker run --rm \
   --user 10001:10001 \
   -v "$PWD/music:/music:ro" \
   -v "$PWD/alignment-jobs:/jobs" \
   -v "$PWD/aligner-model-cache:/models" \
-  wangjiqing/xingyu-lyrics-aligner:0.4.0 \
+  wangjiqing/xingyu-lyrics-aligner:0.5.0 \
   xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu --once
 ```
 
 Do not publish ports and do not mount `/var/run/docker.sock`. GPU containers
-are not part of the v0.4.0 contract; validate PyTorch, WhisperX, faster-whisper,
+are not part of the v0.5.0 contract; validate PyTorch, WhisperX, faster-whisper,
 Demucs, CUDA runtime, and host drivers separately before publishing a GPU
 profile.

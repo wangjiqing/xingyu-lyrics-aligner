@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.4.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并新增官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，供后续人工校对。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.5.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
 
 普通用户推荐使用：
 
@@ -12,7 +12,7 @@ xingyu-align
 
 `xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-## v0.4.0 能做什么
+## v0.5.0 能做什么
 
 - 读取本地音频文件和逐行可信歌词文本。
 - 构建中文 CTC alignment text，但不改写 display lyrics。
@@ -22,6 +22,8 @@ xingyu-align
 - 在官方 CPU Docker 镜像中运行同一套 `xingyu-align` CLI。
 - 可选运行 `xingyu-align worker run`，通过共享 `/jobs` 目录服务星语音库 Docker Compose 部署。
 - 让 Worker 处理 `LYRIC_DRAFT_EXTRACTION` 任务，把音频转换为未对齐候选歌词草稿。
+- 通过 `/jobs/{jobId}/status.json` 暴露 Worker 当前状态快照，并通过
+  `/jobs/{jobId}/events.jsonl` 暴露生命周期事件流。
 - 定义并校验 SWLRC v1：面向星语音库与星语音乐盒的增强逐字 / 逐词歌词格式。
 - 可选通过 Demucs 人声分离与 faster-whisper 从音频提取 ASR 候选歌词，仅供人工复核。
 - 可额外生成简体或繁体候选歌词副本，不覆盖原始 ASR 输出。
@@ -30,7 +32,7 @@ xingyu-align
 
 - ASR transcription 只存在于显式的 `candidate extract` 工作流中，不属于可信歌词对齐默认主路径。
 - 不联网匹配歌词，不改写用户歌词，不上传音频。
-- Demucs 只用于可选的候选歌词流程。v0.4.0 不包含 UVR、GUI、数据库、HTTP 服务、消息队列或 Docker Socket 访问。
+- Demucs 只用于可选的候选歌词流程。v0.5.0 不包含 UVR、GUI、数据库、HTTP 服务、消息队列或 Docker Socket 访问。
 - 默认 CLI 路径不引入常驻进程；Docker Worker 是面向音库集成的可选部署模式。
 - macOS 上请求 MPS 时，WhisperX alignment 可能回退 CPU。
 - macOS 安装脚本不承诺 Windows CUDA。
@@ -52,16 +54,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-也可以直接从 GitHub v0.4.0 tag 安装：
+也可以直接从 GitHub v0.5.0 tag 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.4.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.4.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0
 ```
 
 包含候选歌词可选依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.4.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.4.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0 --candidate-lyrics
 ```
 
 安装时选择并保存默认 CLI 语言：
@@ -109,7 +111,7 @@ xingyu-align config show
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.4.0 --run
+xingyu-align update --candidate-lyrics --ref v0.5.0 --run
 ```
 
 ## 手动开发安装
@@ -208,7 +210,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 本文默认示例使用 GHCR。发布 workflow 会把同一组版本标签同步推送到 Docker Hub：
-`0.4.0`、`0.4`、`latest` 和 `v0.4.0`。
+`0.5.0`、`0.5`、`latest` 和 `v0.5.0`。
 镜像发布 `linux/amd64` 与 `linux/arm64` 多架构 manifest，Apple Silicon Mac 会默认拉取
 ARM64 镜像。
 
@@ -219,7 +221,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align doctor
 ```
 
@@ -230,7 +232,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align models pull --language zh --device cpu
 ```
 
@@ -241,7 +243,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.4.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
   xingyu-align align \
     --audio /music/song.flac \
     --lyrics /jobs/job-001/trusted-lyrics.txt \
@@ -261,7 +263,7 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
 
 ## Docker Worker
 
-星语音库 Docker Compose 部署可启用可选 Worker。v0.4.0 支持两类任务：
+星语音库 Docker Compose 部署可启用可选 Worker。v0.5.0 支持两类任务：
 
 - `LYRICS_ALIGNMENT`：可信歌词 + 音频 -> `alignment.json`、LRC、SWLRC。
 - `LYRIC_DRAFT_EXTRACTION`：音频 -> 未对齐 ASR 候选歌词文本，供人工校对；它不是可信歌词。
@@ -270,11 +272,13 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
 xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu
 ```
 
-schema v1 请求仍然视为对齐任务。schema v2 请求必须包含 `taskType`。Worker 通过排他创建 `RUNNING` 后移除 `READY` 来领取任务；`status.json` 使用临时文件加原子 rename 写入；stderr 按 attempt 保留；并写入 `SUCCEEDED`、`FAILED`、`NEEDS_REVIEW` 或 `ABANDONED` 终态 marker。草稿提取任务不会写 `NEEDS_REVIEW`；候选歌词是否确认可信属于音库业务流程。
+schema v1 请求仍然视为对齐任务。schema v2 请求继续兼容。schema v3 为草稿提取新增 `preset` 与 `overrides`。Worker 通过排他创建 `RUNNING` 后移除 `READY` 来领取任务；`status.json` 使用临时文件加 flush、fsync 和原子 rename 写入；追加 `events.jsonl`；stderr 按 attempt 保留；并写入 `SUCCEEDED`、`FAILED`、`NEEDS_REVIEW` 或 `ABANDONED` 终态 marker。草稿提取任务不会写 `NEEDS_REVIEW`；候选歌词是否确认可信属于音库业务流程。
+
+`status.json` 是唯一当前状态快照，包含 `statusSchemaVersion`、`requestSchemaVersion`、`state`、`stage`、`startedAt`、`stageStartedAt`、`updatedAt`、`heartbeatAt`、`requestedConfig`、`resolvedConfig`、`warnings`、`error` 和 `result` 等稳定字段。`events.jsonl` 是追加式生命周期事件流，用于观察状态切换和 warning，不替代 `stderr.log` 或 `attempts/{attemptId}.stderr.log`。只要 `heartbeatAt` 新鲜，上层应把长任务视为仍在运行；本版不会为模型加载、人声分离或 CTC 对齐伪造百分比进度。
 
 草稿提取会在 `/jobs/{jobId}/result` 下写入 `transcript.cleaned.txt`、`transcript.raw.txt`、`transcript.segments.json` 和 `report.json`。Worker 默认在任务结束后清理人声分离中间文件；仅当 `retainIntermediate: true` 时，`vocals.wav` 会保留在 `/jobs/{jobId}/intermediate`，不会放入 `result`。
 
-Worker 只允许读取 `/music` 下的音频路径，只允许读写 `/jobs` 和 `/models`。它不是 HTTP 服务，不暴露端口，不使用数据库、消息队列或 `/var/run/docker.sock`。v0.4.0 镜像同时安装 alignment 与 candidate-lyrics 依赖，包括 faster-whisper、Demucs 和 TorchCodec，因此比 v0.3.0 更大；首次运行可能下载或预热模型，CPU 草稿提取会比普通对齐更慢、临时磁盘占用也更高。详见
+Worker 只允许读取 `/music` 下的音频路径，只允许读写 `/jobs` 和 `/models`。它不是 HTTP 服务，不暴露端口，不使用数据库、消息队列或 `/var/run/docker.sock`。v0.5.0 镜像同时安装 alignment 与 candidate-lyrics 依赖，包括 faster-whisper、Demucs 和 TorchCodec，因此比 v0.3.0 更大；首次运行可能下载或预热模型，CPU 草稿提取会比普通对齐更慢、临时磁盘占用也更高。详见
 [Docker Worker 协议](docs/docker-worker.md) 和
 [Compose 示例](deploy/docker-compose.worker.example.yml)。
 
@@ -293,12 +297,20 @@ xingyu-align candidate extract \
   --audio "/path/to/song.flac" \
   --output-dir "/path/to/prelyrics" \
   --language zh \
-  --model medium
+  --preset recommended
 ```
 
 该命令会输出 `vocals.wav`、`transcript.raw.txt`、`transcript.segments.json`、
 `transcript.cleaned.txt` 和 `report.json`。如需跳过 Demucs，可传入
 `--skip-separation` 直接转写原始混音音频。
+
+草稿提取预设包括 `fast`、`recommended`、`high-quality` 和
+`full-recognition`。`fast` 使用较小 ASR 模型并跳过分离；`recommended`
+使用 `medium`、跳过分离并开启 VAD；`high-quality` 使用 `medium` 且启用人声分离；
+`full-recognition` 保留分离但关闭 VAD，以减少弱人声、念白和非标准片段被过滤的概率。
+`full-recognition` 不等于绝对最高准确度。`--model large-v3`、`--skip-separation`
+和 `--no-vad` 等高级参数会覆盖预设。`large-v3` 仍可作为高级模型名使用，但因为更慢、
+占用更多内存和磁盘，不进入普通预设。
 
 生成简体或繁体复核副本：
 

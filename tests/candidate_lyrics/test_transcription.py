@@ -169,6 +169,101 @@ def test_skip_separation_transcribes_original_audio(tmp_path: Path) -> None:
     assert "已跳过 Demucs 人声分离" in report["warnings"][1]
 
 
+def test_cli_style_preset_is_overridden_by_explicit_false_values(tmp_path: Path) -> None:
+    audio = tmp_path / "song.flac"
+    audio.write_bytes(b"fake audio")
+    output_dir = tmp_path / "out"
+
+    def fake_separator(audio_path: Path, output_path: Path) -> Path:
+        vocals = output_path / "vocals.wav"
+        vocals.write_bytes(b"fake vocals")
+        return vocals
+
+    def fake_transcriber(
+        audio_path: Path,
+        *,
+        model_name: str,
+        language: str | None,
+        device: str,
+        vad_filter: bool,
+        condition_on_previous_text: bool,
+    ) -> object:
+        assert model_name == "large-v3"
+        assert vad_filter is False
+        assert audio_path == output_dir / "vocals.wav"
+        return transcription.TranscriptionResult(
+            segments=[transcription.TranscriptSegment(start=0.0, end=1.0, text="candidate")],
+            detected_language="zh",
+        )
+
+    args = Namespace(
+        audio=audio,
+        output_dir=output_dir,
+        language="zh",
+        preset="high-quality",
+        model="large-v3",
+        device="cpu",
+        skip_separation=False,
+        no_vad=True,
+        condition_on_previous_text=False,
+        keep_suspected_metadata=False,
+        keep_intermediates=True,
+    )
+
+    report = transcription.extract_candidate_lyrics(
+        args,
+        separator=fake_separator,
+        transcriber=fake_transcriber,
+    )
+
+    assert report["resolvedConfig"]["preset"] == "HIGH_QUALITY"
+    assert report["resolvedConfig"]["asr_model"] == "large-v3"
+    assert report["resolvedConfig"]["vad_filter"] is False
+
+
+def test_resolve_cli_retain_intermediate_preserves_legacy_and_preset_semantics() -> None:
+    assert (
+        transcription.resolve_cli_retain_intermediate(
+            preset=None,
+            skip_separation=None,
+            keep_intermediates=False,
+        )
+        is True
+    )
+    assert (
+        transcription.resolve_cli_retain_intermediate(
+            preset=None,
+            skip_separation=False,
+            keep_intermediates=False,
+        )
+        is True
+    )
+    assert (
+        transcription.resolve_cli_retain_intermediate(
+            preset=None,
+            skip_separation=True,
+            keep_intermediates=False,
+        )
+        is False
+    )
+    assert (
+        transcription.resolve_cli_retain_intermediate(
+            preset="recommended",
+            skip_separation=None,
+            keep_intermediates=False,
+        )
+        is None
+    )
+    assert (
+        transcription.resolve_cli_retain_intermediate(
+            preset="recommended",
+            skip_separation=None,
+            keep_intermediates=True,
+        )
+        is True
+    )
+
+
 def test_missing_audio_file_error_message(tmp_path: Path) -> None:
     args = Namespace(
         audio=tmp_path / "missing.flac",
