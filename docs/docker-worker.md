@@ -5,6 +5,12 @@ lyric draft extraction from v0.4.0. The Worker remains a local executor: it
 exposes no HTTP port, uses no database or message queue, and does not need the
 Docker socket.
 
+v0.6.0 adds optional `firstAlignedLyricStartMs`, `preservedHeaderLines`, and
+`presentationHints` fields to alignment `status.json.result` for request schema 1, 2, and 3.
+Preserved entries explicitly set `participatedInAlignment: false`. Presentation hints are
+display-only and must not be treated as SWLRC token timing. Draft extraction and markers are
+unchanged.
+
 ## Mounted Paths
 
 ```text

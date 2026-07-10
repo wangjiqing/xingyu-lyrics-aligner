@@ -2,6 +2,12 @@
 
 See [../CHANGELOG.md](../CHANGELOG.md) for the release history.
 
+## 0.6.0 Header Preservation
+
+- `NON_LYRIC_HEADER` content does not consume CTC characters or section lyric indices.
+- Alignment/report/CLI/Worker results expose preserved lines and display-only intro hints.
+- SWLRC v1 remains a singing-token-only timeline.
+
 ## 0.4.0 Worker Draft Extraction
 
 - Adds Worker `schemaVersion: 2` with explicit `taskType`.

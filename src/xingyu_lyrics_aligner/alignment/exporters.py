@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from xingyu_lyrics_aligner.formats.swlrc import SwlrcDocument, serialize_swlrc
-from xingyu_lyrics_aligner.schemas.alignment import AlignmentDocument, AlignmentLine, ReportDocument
+from xingyu_lyrics_aligner.schemas.alignment import (
+    AlignmentDocument,
+    AlignmentLine,
+    PreservedHeaderLine,
+    ReportDocument,
+)
 
 OUTPUT_FILES = ("alignment.json", "lyrics.lrc", "lyrics.swlrc", "report.json")
 
@@ -21,10 +27,16 @@ def format_lrc_time(seconds: float) -> str:
     return f"{minutes:02d}:{rest:05.2f}"
 
 
-def render_lrc(lines: list[AlignmentLine], *, offset_ms: int = 0) -> str:
+def render_lrc(
+    lines: list[AlignmentLine],
+    *,
+    offset_ms: int = 0,
+    header_lines: Sequence[PreservedHeaderLine] | None = None,
+) -> str:
     """Render line-level LRC. Offset affects export only."""
     offset_seconds = offset_ms / 1000.0
-    rows = [
+    rows = [line.text for line in (header_lines or [])]
+    rows += [
         f"[{format_lrc_time(float(line.start) + offset_seconds)}]{line.text}"
         for line in lines
         if line.start is not None
@@ -35,7 +47,11 @@ def render_lrc(lines: list[AlignmentLine], *, offset_ms: int = 0) -> str:
 def write_json(path: Path, model: BaseModel) -> None:
     """Write a Pydantic model as UTF-8 JSON."""
     path.write_text(
-        json.dumps(model.model_dump(mode="json", exclude_none=True), ensure_ascii=False, indent=2)
+        json.dumps(
+            model.model_dump(mode="json", exclude_none=True, by_alias=True),
+            ensure_ascii=False,
+            indent=2,
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -61,7 +77,11 @@ def write_outputs(
     output_dir.mkdir(parents=True, exist_ok=True)
     write_json(output_dir / "alignment.json", alignment)
     (output_dir / "lyrics.lrc").write_text(
-        render_lrc(alignment.lines, offset_ms=lrc_offset_ms),
+        render_lrc(
+            alignment.lines,
+            offset_ms=lrc_offset_ms,
+            header_lines=alignment.preserved_header_lines,
+        ),
         encoding="utf-8",
     )
     (output_dir / "lyrics.swlrc").write_text(swlrc_text, encoding="utf-8")

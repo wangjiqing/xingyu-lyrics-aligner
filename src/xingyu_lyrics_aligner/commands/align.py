@@ -139,6 +139,14 @@ def align_json_result_payload(result: AlignRunResult) -> dict[str, object]:
             "skipped_line_count": result.swlrc.skipped_line_count,
         },
         "warnings": result.report.warnings,
+        "firstAlignedLyricStartMs": result.report.first_aligned_lyric_start_ms,
+        "preservedHeaderLines": [
+            line.model_dump(mode="json", exclude_none=True, by_alias=True)
+            for line in result.report.preserved_header_lines
+        ],
+        "presentationHints": [
+            hint.model_dump(mode="json", by_alias=True) for hint in result.report.presentation_hints
+        ],
     }
 
 

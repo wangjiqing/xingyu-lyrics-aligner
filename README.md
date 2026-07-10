@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.5.0
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.6.0
 aligns local audio against user-provided lyric lines, defines SWLRC v1, keeps
 optional ASR candidate-lyrics extraction for manual review, and adds an official
 CPU Docker image plus an optional shared-directory Worker for Docker Compose
@@ -19,12 +19,22 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.5.0 Can Do
+## What v0.6.0 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
 - Run WhisperX CTC forced alignment without ASR transcription.
 - Export `alignment.json`, `lyrics.lrc`, `lyrics.swlrc`, and `report.json`.
+
+### Preserved credits and intro display (v0.6.0)
+
+Standard LRC metadata and conservatively recognized leading credit blocks are classified before
+CTC. `NON_LYRIC_HEADER` lines do not consume alignment characters or section lyric indices. Their
+original text and order are retained in LRC and structured results; they are never SWLRC tokens.
+
+Results add `firstAlignedLyricStartMs`, `preservedHeaderLines`, and optional
+`presentationHints`. Suggested ranges are display-only, bounded by the first aligned lyric, and
+are not part of the lyric timeline. Existing consumers may ignore these additive fields.
 - Optionally use a manual section manifest for structure-aware alignment.
 - Run the same CLI inside the official CPU Docker image.
 - Optionally run `xingyu-align worker run` against a mounted `/jobs` directory
@@ -75,16 +85,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-Install directly from the GitHub v0.5.0 tag:
+Install directly from the GitHub v0.6.0 tag:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0
 ```
 
 Include optional candidate-lyrics dependencies:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0 --candidate-lyrics
 ```
 
 To choose and save the default CLI language during install:
@@ -129,7 +139,7 @@ Update from GitHub:
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.5.0 --run
+xingyu-align update --candidate-lyrics --ref v0.6.0 --run
 ```
 
 ## Manual Development Install
@@ -231,7 +241,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 GHCR is the primary example registry in this README. Release tags are mirrored to
-Docker Hub with the same version tags: `0.5.0`, `0.5`, `latest`, and `v0.5.0`.
+Docker Hub with the same version tags: `0.6.0`, `0.6`, `latest`, and `v0.6.0`.
 Images are published for `linux/amd64` and `linux/arm64`; Apple Silicon Macs pull
 the ARM64 image by default.
 
