@@ -424,6 +424,9 @@ def test_align_json_result_success_is_single_json(
     assert payload["success"] is True
     assert payload["files"]["swlrc"] == str(output / "lyrics.swlrc")
     assert payload["summary"]["coverage"] == 0.5
+    assert payload["firstAlignedLyricStartMs"] is None
+    assert payload["preservedHeaderLines"] == []
+    assert payload["presentationHints"] == []
     assert result.stderr == ""
 
 

@@ -2,9 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.5.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.6.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
 
 普通用户推荐使用：
+
+v0.6.0 会在 CTC 前区分标准 LRC metadata、`NON_LYRIC_HEADER` 和正式演唱歌词。保守识别的
+文件头署名块不会消耗对齐字符或 section 演唱行号，原文会保留到 LRC 和结构化结果，但不
+生成 SWLRC token。新增的 `firstAlignedLyricStartMs`、`preservedHeaderLines` 和可选
+`presentationHints` 均为向后兼容字段；建议时间仅供前奏展示，不属于歌词时间轴。
 
 ```bash
 xingyu-align
@@ -12,7 +17,7 @@ xingyu-align
 
 `xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-## v0.5.0 能做什么
+## v0.6.0 能做什么
 
 - 读取本地音频文件和逐行可信歌词文本。
 - 构建中文 CTC alignment text，但不改写 display lyrics。
@@ -54,16 +59,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-也可以直接从 GitHub v0.5.0 tag 安装：
+也可以直接从 GitHub v0.6.0 tag 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0
 ```
 
 包含候选歌词可选依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.5.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.5.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0 --candidate-lyrics
 ```
 
 安装时选择并保存默认 CLI 语言：
@@ -111,7 +116,7 @@ xingyu-align config show
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.5.0 --run
+xingyu-align update --candidate-lyrics --ref v0.6.0 --run
 ```
 
 ## 手动开发安装
@@ -210,7 +215,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 本文默认示例使用 GHCR。发布 workflow 会把同一组版本标签同步推送到 Docker Hub：
-`0.5.0`、`0.5`、`latest` 和 `v0.5.0`。
+`0.6.0`、`0.6`、`latest` 和 `v0.6.0`。
 镜像发布 `linux/amd64` 与 `linux/arm64` 多架构 manifest，Apple Silicon Mac 会默认拉取
 ARM64 镜像。
 

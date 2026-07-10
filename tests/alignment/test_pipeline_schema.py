@@ -10,6 +10,7 @@ from xingyu_lyrics_aligner.alignment.backmap import CharacterTiming
 from xingyu_lyrics_aligner.alignment.ctc import DeviceResolution
 from xingyu_lyrics_aligner.alignment.pipeline import AlignRequest, run_alignment
 from xingyu_lyrics_aligner.device import DeviceStrategy
+from xingyu_lyrics_aligner.formats.swlrc import parse_swlrc
 
 
 class FakeAligner:
@@ -155,3 +156,92 @@ def test_pipeline_overwrite_protection_and_debug_output(
     assert result.report.line_count == 1
     assert result.report.estimated_token_count == 2
     assert (output / "debug.summary.json").exists()
+
+
+def test_header_protocol_lrc_swlrc_and_structured_outputs(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.alignment.pipeline.load_audio",
+        lambda path: SimpleNamespace(samples=object(), duration_seconds=30.0),
+    )
+    monkeypatch.setattr("xingyu_lyrics_aligner.alignment.pipeline.WhisperXCtcAligner", FakeAligner)
+    audio = tmp_path / "song.wav"
+    lyrics = tmp_path / "lyrics.txt"
+    audio.write_bytes(b"fake")
+    lyrics.write_text(
+        "[ti:我的快乐就是想你]\n——\n我的快乐就是想你\n作词：牛哥\n作曲：平凡人/小龙女\n——\n有个问题一直藏在我心里\n",
+        encoding="utf-8",
+    )
+    # Start at 5 s to exercise intro presentation hints.
+    manifest = tmp_path / "sections.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "line_index_base": 0,
+                "line_end_inclusive": False,
+                "sections": [
+                    {
+                        "id": "verse",
+                        "audio_start": 5.0,
+                        "audio_end": 30.0,
+                        "line_start": 0,
+                        "line_end": 1,
+                        "kind": "singing",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = run_alignment(
+        AlignRequest(
+            audio=audio,
+            lyrics=lyrics,
+            output_dir=tmp_path / "out",
+            language="zh",
+            device=DeviceStrategy.CPU,
+            section_manifest=manifest,
+        )
+    )
+
+    assert len(result.alignment.lines) == 1
+    assert result.alignment.lines[0].source_line_index == 6
+    assert result.report.first_aligned_lyric_start_ms == 5000
+    assert len(result.report.preserved_header_lines) == 6
+    assert all(not line.participated_in_alignment for line in result.report.preserved_header_lines)
+    assert max(hint.suggested_end_ms for hint in result.report.presentation_hints) <= 5000
+    lrc = (tmp_path / "out" / "lyrics.lrc").read_text(encoding="utf-8")
+    assert lrc.startswith("[ti:我的快乐就是想你]\n——\n我的快乐就是想你\n作词：牛哥")
+    assert "[00:05.00]有个问题一直藏在我心里" in lrc
+    swlrc_text = (tmp_path / "out" / "lyrics.swlrc").read_text(encoding="utf-8")
+    assert "作词" not in swlrc_text
+    assert len(parse_swlrc(swlrc_text).lines) == 1
+    alignment_json = json.loads((tmp_path / "out" / "alignment.json").read_text(encoding="utf-8"))
+    assert alignment_json["preservedHeaderLines"][1]["nonAlignmentReason"] == "non_singing_header"
+    assert alignment_json["preservedHeaderLines"][1]["lineClassification"] == "NON_LYRIC_HEADER"
+
+
+def test_header_presentation_hints_degrade_safely_at_zero(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.alignment.pipeline.load_audio",
+        lambda path: SimpleNamespace(samples=object(), duration_seconds=10.0),
+    )
+    monkeypatch.setattr("xingyu_lyrics_aligner.alignment.pipeline.WhisperXCtcAligner", FakeAligner)
+    audio, lyrics = tmp_path / "song.wav", tmp_path / "lyrics.txt"
+    audio.write_bytes(b"fake")
+    lyrics.write_text("作词：牛哥\n第一句\n", encoding="utf-8")
+    result = run_alignment(
+        AlignRequest(
+            audio=audio,
+            lyrics=lyrics,
+            output_dir=tmp_path / "zero",
+            language="zh",
+            device=DeviceStrategy.CPU,
+        )
+    )
+    assert result.report.first_aligned_lyric_start_ms == 0
+    assert result.report.presentation_hints == []

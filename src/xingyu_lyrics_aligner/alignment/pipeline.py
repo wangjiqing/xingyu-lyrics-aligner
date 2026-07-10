@@ -26,13 +26,20 @@ from xingyu_lyrics_aligner.alignment.sections import (
     validate_sections,
 )
 from xingyu_lyrics_aligner.alignment.swlrc_exporter import SwlrcExportStats, build_swlrc_document
-from xingyu_lyrics_aligner.alignment.text import LineSpec, build_line_specs, read_lyrics
+from xingyu_lyrics_aligner.alignment.text import (
+    LineSpec,
+    TrustedLyricLine,
+    build_line_specs,
+    parse_trusted_lyrics,
+)
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.schemas.alignment import (
     AlignmentDocument,
     AlignmentLine,
     AlignmentSource,
     AlignmentStatus,
+    PresentationHint,
+    PreservedHeaderLine,
     ReportDocument,
 )
 from xingyu_lyrics_aligner.schemas.manifest import Section
@@ -78,10 +85,13 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
     validate_request(request)
     ensure_output_paths(request.output_dir, overwrite=request.overwrite)
 
-    lyric_lines = read_lyrics(request.lyrics)
-    if not lyric_lines:
+    trusted_lyrics = parse_trusted_lyrics(request.lyrics)
+    singing_source_lines = trusted_lyrics.singing_lines
+    if not trusted_lyrics.lines:
         raise ValueError("Lyrics file contains no non-empty lines.")
-    line_specs = build_line_specs(lyric_lines)
+    if not singing_source_lines:
+        raise ValueError("Lyrics contain no singing lines after header classification.")
+    line_specs = build_line_specs([line.text for line in singing_source_lines])
     if input_character_count(line_specs) == 0:
         raise ValueError("Lyrics contain no alignable characters after normalization.")
 
@@ -95,7 +105,7 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
     aligner = WhisperXCtcAligner(language=request.language, requested_device=request.device)
     all_lines: list[AlignmentLine] = []
     all_chars: list[CharacterTiming] = []
-    warnings = list(aligner.device.warnings) + section_warnings
+    warnings = list(aligner.device.warnings) + section_warnings + trusted_lyrics.warnings
 
     for section in sections:
         section_line_specs = line_specs[section.line_start : section.line_end]
@@ -121,6 +131,18 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         warnings.extend(section_backmap_warnings)
 
     all_lines.sort(key=lambda line: line.index)
+    all_lines = [
+        line.model_copy(
+            update={"source_line_index": singing_source_lines[line.index].source_line_index}
+        )
+        for line in all_lines
+    ]
+    first_start = next((line.start for line in all_lines if line.start is not None), None)
+    first_start_ms = round(first_start * 1000) if first_start is not None else None
+    preserved_headers, presentation_hints = build_header_protocol(
+        trusted_lyrics.preserved_header_lines,
+        first_start_ms=first_start_ms,
+    )
     source = AlignmentSource(
         audio_name=request.audio.name,
         alignment_model=aligner.align_model_name,
@@ -132,6 +154,9 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         source=source,
         lines=all_lines,
         warnings=dedupe_warnings(warnings),
+        firstAlignedLyricStartMs=first_start_ms,
+        preservedHeaderLines=preserved_headers,
+        presentationHints=presentation_hints,
     )
     swlrc_result = build_swlrc_document(alignment)
     report = build_report(
@@ -144,6 +169,9 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         estimated_token_count=swlrc_result.stats.estimated_token_count,
         skipped_line_count=swlrc_result.stats.skipped_line_count,
         swlrc_warnings=swlrc_result.stats.warnings,
+        first_aligned_lyric_start_ms=first_start_ms,
+        preserved_header_lines=preserved_headers,
+        presentation_hints=presentation_hints,
     )
     write_outputs(
         request.output_dir,
@@ -216,6 +244,9 @@ def build_report(
     estimated_token_count: int = 0,
     skipped_line_count: int = 0,
     swlrc_warnings: list[str] | None = None,
+    first_aligned_lyric_start_ms: int | None = None,
+    preserved_header_lines: list[PreservedHeaderLine] | None = None,
+    presentation_hints: list[PresentationHint] | None = None,
 ) -> ReportDocument:
     """Build compact statistics without copying full lyric text."""
     input_chars = input_character_count(line_specs)
@@ -238,7 +269,36 @@ def build_report(
         skipped_line_count=skipped_line_count,
         swlrc_warnings=swlrc_warnings or [],
         warnings=warnings,
+        firstAlignedLyricStartMs=first_aligned_lyric_start_ms,
+        preservedHeaderLines=preserved_header_lines or [],
+        presentationHints=presentation_hints or [],
     )
+
+
+def build_header_protocol(
+    source_lines: list[TrustedLyricLine], *, first_start_ms: int | None
+) -> tuple[list[PreservedHeaderLine], list[PresentationHint]]:
+    """Build display-only intro hints; never place them on the lyric timeline."""
+    hints: list[PresentationHint] = []
+    if first_start_ms is not None and first_start_ms > 0 and source_lines:
+        for index in range(len(source_lines)):
+            start = first_start_ms * index // len(source_lines)
+            end = first_start_ms * (index + 1) // len(source_lines)
+            hints.append(PresentationHint(suggestedStartMs=start, suggestedEndMs=end))
+    preserved = []
+    for index, line in enumerate(source_lines):
+        reason = "lrc_metadata" if line.kind.value == "LRC_METADATA" else "non_singing_header"
+        preserved.append(
+            PreservedHeaderLine(
+                text=line.text,
+                kind="LRC_METADATA" if reason == "lrc_metadata" else (line.header_kind or "HEADER"),
+                lineClassification=line.kind.value,
+                sourceLineIndex=line.source_line_index,
+                nonAlignmentReason=reason,
+                presentationHints=hints[index] if hints else None,
+            )
+        )
+    return preserved, hints
 
 
 def dedupe_warnings(warnings: list[str]) -> list[str]:

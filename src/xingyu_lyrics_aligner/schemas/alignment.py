@@ -38,6 +38,23 @@ class AlignmentLine(BaseModel):
     tokens: list[AlignmentToken] = Field(default_factory=list)
     section_id: str | None = None
     section_kind: str | None = None
+    source_line_index: int | None = Field(default=None, alias="sourceLineIndex")
+
+
+class PresentationHint(BaseModel):
+    display_only: bool = Field(default=True, alias="displayOnly")
+    suggested_start_ms: int = Field(alias="suggestedStartMs")
+    suggested_end_ms: int = Field(alias="suggestedEndMs")
+
+
+class PreservedHeaderLine(BaseModel):
+    text: str
+    kind: str
+    line_classification: str = Field(alias="lineClassification")
+    source_line_index: int = Field(alias="sourceLineIndex")
+    participated_in_alignment: bool = Field(default=False, alias="participatedInAlignment")
+    non_alignment_reason: str = Field(default="non_singing_header", alias="nonAlignmentReason")
+    presentation_hints: PresentationHint | None = Field(default=None, alias="presentationHints")
 
 
 class AlignmentSource(BaseModel):
@@ -58,6 +75,13 @@ class AlignmentDocument(BaseModel):
     source: AlignmentSource
     lines: list[AlignmentLine]
     warnings: list[str] = Field(default_factory=list)
+    first_aligned_lyric_start_ms: int | None = Field(default=None, alias="firstAlignedLyricStartMs")
+    preserved_header_lines: list[PreservedHeaderLine] = Field(
+        default_factory=list, alias="preservedHeaderLines"
+    )
+    presentation_hints: list[PresentationHint] = Field(
+        default_factory=list, alias="presentationHints"
+    )
 
 
 class ReportDocument(BaseModel):
@@ -78,3 +102,10 @@ class ReportDocument(BaseModel):
     skipped_line_count: int = 0
     swlrc_warnings: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    first_aligned_lyric_start_ms: int | None = Field(default=None, alias="firstAlignedLyricStartMs")
+    preserved_header_lines: list[PreservedHeaderLine] = Field(
+        default_factory=list, alias="preservedHeaderLines"
+    )
+    presentation_hints: list[PresentationHint] = Field(
+        default_factory=list, alias="presentationHints"
+    )

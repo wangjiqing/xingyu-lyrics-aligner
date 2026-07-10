@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Classify trusted input as LRC metadata, non-singing header, or singing lyric before CTC.
+- Preserve leading credit blocks in LRC and structured output without creating SWLRC tokens.
+- Add display-only intro hints and `firstAlignedLyricStartMs` to CLI/Worker results and reports.
+
 ## 0.5.0
 
 - Added Worker `schemaVersion: 3` for `LYRIC_DRAFT_EXTRACTION` preset and

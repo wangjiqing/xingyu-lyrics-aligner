@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "firstAlignedLyricStartMs": 24350,
+  "preservedHeaderLines": [
+    {
+      "text": "作词：牛哥",
+      "kind": "CREDIT",
+      "lineClassification": "NON_LYRIC_HEADER",
+      "sourceLineIndex": 2,
+      "participatedInAlignment": false,
+      "nonAlignmentReason": "non_singing_header"
+    }
+  ],
+  "presentationHints": [
+    {
+      "displayOnly": true,
+      "suggestedStartMs": 0,
+      "suggestedEndMs": 24350
+    }
+  ]
+}

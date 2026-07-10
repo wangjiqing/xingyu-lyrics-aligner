@@ -8,7 +8,12 @@ import pytest
 from xingyu_lyrics_aligner.alignment.backmap import CharacterTiming, backfill_lines
 from xingyu_lyrics_aligner.alignment.exporters import render_lrc
 from xingyu_lyrics_aligner.alignment.sections import load_section_manifest, validate_sections
-from xingyu_lyrics_aligner.alignment.text import build_line_specs, clean_alignment_text
+from xingyu_lyrics_aligner.alignment.text import (
+    TrustedLineKind,
+    build_line_specs,
+    clean_alignment_text,
+    parse_trusted_lyrics,
+)
 from xingyu_lyrics_aligner.schemas.alignment import AlignmentLine, AlignmentStatus, AlignmentToken
 
 
@@ -17,6 +22,26 @@ def test_display_text_and_alignment_text_are_separate() -> None:
 
     assert specs[0].text == "妳，好～♪ 星语"
     assert specs[0].alignment_text == "妳好星语"
+
+
+def test_trusted_header_block_is_preserved_but_not_classified_as_singing(tmp_path: Path) -> None:
+    lyrics = tmp_path / "lyrics.txt"
+    lyrics.write_text(
+        "——\n我的快乐就是想你\n作词：牛哥\n作曲：平凡人/小龙女\n——\n有个问题一直藏在我心里\n",
+        encoding="utf-8",
+    )
+    document = parse_trusted_lyrics(lyrics)
+
+    assert [line.kind for line in document.lines[:5]] == [TrustedLineKind.NON_LYRIC_HEADER] * 5
+    assert [line.text for line in document.singing_lines] == ["有个问题一直藏在我心里"]
+    assert document.lines[2].source_line_index == 2
+
+
+def test_credit_words_inside_real_lyric_are_not_misclassified(tmp_path: Path) -> None:
+    lyrics = tmp_path / "lyrics.txt"
+    lyrics.write_text("作词的人也会流泪\n这是歌声\n", encoding="utf-8")
+    document = parse_trusted_lyrics(lyrics)
+    assert all(line.kind == TrustedLineKind.SINGING_LYRIC for line in document.lines)
 
 
 def test_clean_alignment_text_removes_punctuation_space_music_and_brackets() -> None:

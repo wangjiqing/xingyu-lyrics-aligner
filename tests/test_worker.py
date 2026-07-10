@@ -62,6 +62,9 @@ def test_worker_claims_legal_job_and_writes_succeeded(
     assert "attempt" in status
     assert status["result"]["success"] is True
     assert status["result"]["files"]["swlrc"] == str(job / "result" / "lyrics.swlrc")
+    assert status["result"]["firstAlignedLyricStartMs"] is None
+    assert status["result"]["preservedHeaderLines"] == []
+    assert status["result"]["presentationHints"] == []
     assert not (job / "READY").exists()
     assert (job / "RUNNING").exists()
     assert status["statusSchemaVersion"] == 1
