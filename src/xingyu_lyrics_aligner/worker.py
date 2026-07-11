@@ -434,7 +434,9 @@ def execute_alignment_job(
     except Exception as exc:
         write_attempt_stderr(attempt_stderr_path, stderr_path, traceback.format_exc())
         code = exc.code if isinstance(exc, WorkerError) else align_error_code(exc)
-        message = exc.message if isinstance(exc, WorkerError) else str(exc)
+        message = (
+            exc.message if isinstance(exc, WorkerError) else alignment_failure_message(exc)
+        )
         write_failure_status(
             job_dir,
             code,
@@ -1155,6 +1157,19 @@ def sanitize_error_message(code: str, message: str) -> str:
     if "Traceback (most recent call last)" in message:
         return f"{code} occurred. Inspect stderr for details."
     return message.splitlines()[0] if message else f"{code} occurred."
+
+
+def alignment_failure_message(exc: Exception) -> str:
+    """Return a useful status message while leaving the traceback in stderr."""
+    message = str(exc).strip()
+    if "punkt_tab" in message:
+        return (
+            "Alignment failed because the required NLTK punkt_tab resource is unavailable. "
+            "See stderr for details."
+        )
+    if message:
+        return message
+    return "Alignment failed because a required resource is unavailable. See stderr for details."
 
 
 def suggested_action(code: str) -> str:

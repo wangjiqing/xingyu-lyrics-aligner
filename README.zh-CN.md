@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.6.0 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.6.1 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
 
 普通用户推荐使用：
 
@@ -17,7 +17,7 @@ xingyu-align
 
 `xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-## v0.6.0 能做什么
+## v0.6.1 能做什么
 
 - 读取本地音频文件和逐行可信歌词文本。
 - 构建中文 CTC alignment text，但不改写 display lyrics。
@@ -59,16 +59,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-也可以直接从 GitHub v0.6.0 tag 安装：
+也可以直接从 GitHub v0.6.1 tag 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.1/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.1
 ```
 
 包含候选歌词可选依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.1/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.1 --candidate-lyrics
 ```
 
 安装时选择并保存默认 CLI 语言：
@@ -116,7 +116,7 @@ xingyu-align config show
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.6.0 --run
+xingyu-align update --candidate-lyrics --ref v0.6.1 --run
 ```
 
 ## 手动开发安装
@@ -215,7 +215,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 本文默认示例使用 GHCR。发布 workflow 会把同一组版本标签同步推送到 Docker Hub：
-`0.6.0`、`0.6`、`latest` 和 `v0.6.0`。
+`0.6.1`、`0.6`、`latest` 和 `v0.6.1`。
 镜像发布 `linux/amd64` 与 `linux/arm64` 多架构 manifest，Apple Silicon Mac 会默认拉取
 ARM64 镜像。
 
@@ -226,7 +226,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align doctor
 ```
 
@@ -237,7 +237,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align models pull --language zh --device cpu
 ```
 
@@ -248,7 +248,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align align \
     --audio /music/song.flac \
     --lyrics /jobs/job-001/trusted-lyrics.txt \
@@ -283,7 +283,7 @@ schema v1 请求仍然视为对齐任务。schema v2 请求继续兼容。schema
 
 草稿提取会在 `/jobs/{jobId}/result` 下写入 `transcript.cleaned.txt`、`transcript.raw.txt`、`transcript.segments.json` 和 `report.json`。Worker 默认在任务结束后清理人声分离中间文件；仅当 `retainIntermediate: true` 时，`vocals.wav` 会保留在 `/jobs/{jobId}/intermediate`，不会放入 `result`。
 
-Worker 只允许读取 `/music` 下的音频路径，只允许读写 `/jobs` 和 `/models`。它不是 HTTP 服务，不暴露端口，不使用数据库、消息队列或 `/var/run/docker.sock`。v0.5.0 镜像同时安装 alignment 与 candidate-lyrics 依赖，包括 faster-whisper、Demucs 和 TorchCodec，因此比 v0.3.0 更大；首次运行可能下载或预热模型，CPU 草稿提取会比普通对齐更慢、临时磁盘占用也更高。详见
+Worker 只允许读取 `/music` 下的音频路径，只允许读写 `/jobs` 和 `/models`。它不是 HTTP 服务，不暴露端口，不使用数据库、消息队列或 `/var/run/docker.sock`。v0.6.1 镜像同时安装 alignment 与 candidate-lyrics 依赖，包括 faster-whisper、Demucs、TorchCodec 和离线 NLTK punkt_tab；首次运行可能下载或预热模型，CPU 草稿提取会比普通对齐更慢、临时磁盘占用也更高。详见
 [Docker Worker 协议](docs/docker-worker.md) 和
 [Compose 示例](deploy/docker-compose.worker.example.yml)。
 

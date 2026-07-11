@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1
+
+- Bundled the NLTK `punkt_tab` resource in the official Docker image so WhisperX alignment does
+  not attempt a runtime download in network-restricted Worker deployments.
+- Added final-image, non-root, and network-disabled smoke tests for English `PunktTokenizer` plus
+  WhisperX and TorchCodec imports.
+- Kept `ALIGNMENT_FAILED` while ensuring missing-resource failures always expose a useful status
+  message and retain the complete traceback only in stderr.
+- Preserved the v0.6.0 lyric-header, presentation-hint, and Worker observability protocols.
+
 ## 0.6.0
 
 - Classify trusted input as LRC metadata, non-singing header, or singing lyric before CTC.

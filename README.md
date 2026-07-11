@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.6.0
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.6.1
 aligns local audio against user-provided lyric lines, defines SWLRC v1, keeps
 optional ASR candidate-lyrics extraction for manual review, and adds an official
 CPU Docker image plus an optional shared-directory Worker for Docker Compose
@@ -19,7 +19,7 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.6.0 Can Do
+## What v0.6.1 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
@@ -85,16 +85,16 @@ cd xingyu-lyrics-aligner
 ./scripts/install-macos.sh
 ```
 
-Install directly from the GitHub v0.6.0 tag:
+Install directly from the GitHub v0.6.1 tag:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.1/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.1
 ```
 
 Include optional candidate-lyrics dependencies:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.0/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.0 --candidate-lyrics
+curl -fsSL https://raw.githubusercontent.com/wangjiqing/xingyu-lyrics-aligner/v0.6.1/scripts/install-macos.sh | bash -s -- --source github --ref v0.6.1 --candidate-lyrics
 ```
 
 To choose and save the default CLI language during install:
@@ -139,7 +139,7 @@ Update from GitHub:
 
 ```bash
 xingyu-align update --run
-xingyu-align update --candidate-lyrics --ref v0.6.0 --run
+xingyu-align update --candidate-lyrics --ref v0.6.1 --run
 ```
 
 ## Manual Development Install
@@ -241,7 +241,7 @@ docker.io/<DOCKERHUB_USERNAME>/xingyu-lyrics-aligner
 ```
 
 GHCR is the primary example registry in this README. Release tags are mirrored to
-Docker Hub with the same version tags: `0.6.0`, `0.6`, `latest`, and `v0.6.0`.
+Docker Hub with the same version tags: `0.6.1`, `0.6`, `latest`, and `v0.6.1`.
 Images are published for `linux/amd64` and `linux/arm64`; Apple Silicon Macs pull
 the ARM64 image by default.
 
@@ -252,7 +252,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align doctor
 ```
 
@@ -263,7 +263,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align models pull --language zh --device cpu
 ```
 
@@ -274,7 +274,7 @@ docker run --rm \
   -v /host/music:/music:ro \
   -v /host/jobs:/jobs \
   -v /host/models:/models \
-  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.5.0 \
+  ghcr.io/wangjiqing/xingyu-lyrics-aligner:v0.6.1 \
   xingyu-align align \
     --audio /music/song.flac \
     --lyrics /jobs/job-001/trusted-lyrics.txt \
@@ -331,7 +331,7 @@ By default, Worker vocals intermediates are cleaned after the attempt. With
 
 The Worker only reads `/music` paths and writes `/jobs` and `/models` paths. It
 is not an HTTP service, opens no ports, uses no database or message queue, and
-does not mount `/var/run/docker.sock`. The v0.5.0 image installs alignment and
+does not mount `/var/run/docker.sock`. The v0.6.1 image installs alignment and
 candidate-lyrics dependencies, including faster-whisper, Demucs, and TorchCodec,
 so it is larger than v0.3.0. First use may download or warm models; CPU draft
 extraction is much slower and uses more temporary disk than alignment. See

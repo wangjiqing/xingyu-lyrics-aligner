@@ -133,4 +133,8 @@ jobs:
           docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align --help
           docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align doctor
           docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" xingyu-align worker run --help
-          test "$(docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" id -u)" != "0"
+          test "$(docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" id -u)" = "10001"
+          docker run --rm --network none "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" \
+            python -c "import nltk; from nltk.tokenize.punkt import PunktTokenizer; print(nltk.data.find('tokenizers/punkt_tab/english/')); print(PunktTokenizer('english').tokenize('Xingyu aligns lyrics.'))"
+          docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" \
+            python -c "import whisperx, torchcodec, nltk; print('ok')"
