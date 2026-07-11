@@ -469,6 +469,50 @@ def test_worker_failure_preserves_stderr_log(
     assert "RuntimeError: model cache is not ready" in attempt_stderr.read_text(encoding="utf-8")
 
 
+def test_worker_alignment_failure_uses_non_empty_fallback_message(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music)
+
+    def fail_align(**_: object) -> AlignRunResult:
+        raise RuntimeError()
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.worker.align_lyrics", fail_align)
+    run_worker(jobs_dir=jobs, music_dir=music, once=True)
+
+    status = read_status(job)
+    assert status["error"]["code"] == "ALIGNMENT_FAILED"
+    assert status["error"]["message"] == (
+        "Alignment failed because a required resource is unavailable. See stderr for details."
+    )
+    assert "RuntimeError" in (job / "stderr.log").read_text(encoding="utf-8")
+
+
+def test_worker_alignment_failure_identifies_missing_punkt_tab(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    jobs = tmp_path / "jobs"
+    music = tmp_path / "music"
+    job = create_job(jobs, music)
+
+    def fail_align(**_: object) -> AlignRunResult:
+        raise LookupError("Resource punkt_tab not found")
+
+    monkeypatch.setattr("xingyu_lyrics_aligner.worker.align_lyrics", fail_align)
+    run_worker(jobs_dir=jobs, music_dir=music, once=True)
+
+    status = read_status(job)
+    assert status["error"]["code"] == "ALIGNMENT_FAILED"
+    assert "required NLTK punkt_tab resource is unavailable" in status["error"]["message"]
+    assert "LookupError: Resource punkt_tab not found" in (job / "stderr.log").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_worker_retry_preserves_previous_attempt_stderr(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,

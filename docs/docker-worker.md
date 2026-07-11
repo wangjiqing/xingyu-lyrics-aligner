@@ -1,5 +1,10 @@
 # Docker Worker Protocol
 
+v0.6.1 bundles NLTK `punkt_tab` under `/usr/local/share/nltk_data` and sets `NLTK_DATA` in the
+final image. WhisperX alignment can therefore load its English Punkt tokenizer without Worker
+runtime network access. The resource is verified during image construction and by final-image
+smoke tests running as UID/GID 10001. No task startup download was added.
+
 v0.5.0 makes the shared-directory Worker observable while preserving candidate
 lyric draft extraction from v0.4.0. The Worker remains a local executor: it
 exposes no HTTP port, uses no database or message queue, and does not need the
@@ -23,7 +28,7 @@ The container runs as UID/GID `10001:10001`. The host `/jobs` and `/models`
 directories must be writable by that user, or the Compose service must set a
 compatible `user:`. `/music` should be mounted read-only.
 
-The v0.5.0 standard image installs both alignment and candidate-lyrics
+The v0.6.1 standard image installs both alignment and candidate-lyrics
 dependencies, including faster-whisper, Demucs, TorchCodec, and their runtime
 dependencies. It is larger than v0.3.0. First use may download or warm model
 files into `/models`, and CPU draft extraction is much slower and uses more
@@ -372,14 +377,14 @@ Start from [deploy/docker-compose.worker.example.yml](../deploy/docker-compose.w
 and [deploy/.env.worker.example](../deploy/.env.worker.example).
 
 ```bash
-docker build -t wangjiqing/xingyu-lyrics-aligner:0.5.0 .
+docker build -t wangjiqing/xingyu-lyrics-aligner:0.6.1 .
 
 docker run --rm \
   --user 10001:10001 \
   -v "$PWD/music:/music:ro" \
   -v "$PWD/alignment-jobs:/jobs" \
   -v "$PWD/aligner-model-cache:/models" \
-  wangjiqing/xingyu-lyrics-aligner:0.5.0 \
+  wangjiqing/xingyu-lyrics-aligner:0.6.1 \
   xingyu-align worker run --jobs-dir /jobs --music-dir /music --device cpu --once
 ```
 

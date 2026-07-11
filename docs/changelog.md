@@ -2,6 +2,15 @@
 
 See [../CHANGELOG.md](../CHANGELOG.md) for the release history.
 
+## 0.6.1 Docker NLTK Resource Fix
+
+- The official image now contains NLTK `punkt_tab` at build time.
+- Worker alignment no longer needs network access to load the English Punkt tokenizer used by
+  WhisperX 3.8.6.
+- Empty alignment exception messages now receive a non-empty status fallback; tracebacks remain
+  in stderr.
+- No request, status, event, lyric-header, or presentation-hint schema changed.
+
 ## 0.6.0 Header Preservation
 
 - `NON_LYRIC_HEADER` content does not consume CTC characters or section lyric indices.

@@ -7,7 +7,8 @@ ENV PYTHONUNBUFFERED=1 \
     XDG_CACHE_HOME=/models/.cache \
     HF_HOME=/models/huggingface \
     HUGGINGFACE_HUB_CACHE=/models/huggingface/hub \
-    TRANSFORMERS_CACHE=/models/huggingface/transformers
+    TRANSFORMERS_CACHE=/models/huggingface/transformers \
+    NLTK_DATA=/usr/local/share/nltk_data
 
 RUN apt-get -o Acquire::Retries=5 update \
     && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
@@ -38,6 +39,15 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
       "torchvision==0.26.0+cpu" \
       "torchcodec==0.14.0+cpu" \
     && chmod +x /usr/local/bin/xingyu-aligner-entrypoint
+
+ADD --checksum=sha256:e57f64187974277726a3417ca6f181ec5403676c717672eef6a748a7b20e0106 \
+    https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/tokenizers/punkt_tab.zip \
+    /tmp/punkt_tab.zip
+
+RUN python -c "import zipfile; zipfile.ZipFile('/tmp/punkt_tab.zip').extractall('${NLTK_DATA}/tokenizers')" \
+    && python -c "import nltk; nltk.data.find('tokenizers/punkt_tab/english/')" \
+    && chmod -R a+rX "${NLTK_DATA}" \
+    && rm /tmp/punkt_tab.zip
 
 USER app
 
