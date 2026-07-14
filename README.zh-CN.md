@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner 是本地优先的可信歌词对齐 CLI。v0.6.1 支持把本地音频与用户提供的逐行可信歌词直接对齐，正式定义 SWLRC v1，保留可选的 ASR 候选歌词提取能力，并提供官方 CPU Docker 镜像与可选共享目录 Worker，供 Docker Compose 部署接入。Worker 也可以从音频提取未对齐候选歌词草稿，并持续向上层系统暴露状态、阶段、心跳、事件、配置、结果与失败原因。
+Xingyu Lyrics Aligner 是本地优先的可信歌词对齐工具。v0.7.0 新增 Apple Silicon/macOS 14+ 原生 SwiftUI Desktop MVP，同时保留 CLI、Docker 和共享目录 Worker。它把本地音频与用户提供的逐行可信歌词对齐，生成 LRC/SWLRC，并可按用户选择导出人声和伴奏；音频不会上传，模型权重也不随 DMG 分发。
 
 普通用户推荐使用：
 
@@ -17,7 +17,7 @@ xingyu-align
 
 `xingyu-lyrics-aligner` 会作为兼容别名保留。`python -m xingyu_lyrics_aligner.cli` 只建议放在开发或故障排查场景中。
 
-## v0.6.1 能做什么
+## v0.7.0 能做什么
 
 - 读取本地音频文件和逐行可信歌词文本。
 - 构建中文 CTC alignment text，但不改写 display lyrics。
@@ -34,6 +34,14 @@ xingyu-align
 - 可额外生成简体或繁体候选歌词副本，不覆盖原始 ASR 输出。
 
 ## 运行边界与已知限制
+
+原生 SwiftUI macOS Desktop MVP 已在 `apps/macos` 实现，当前仅支持 Apple
+Silicon 和 macOS 14+。v0.7.0 开发分支可以构建内嵌 Python/FFmpeg 的无签名
+DMG 候选包，支持运行环境检查、用户确认后安装模型、可信歌词对齐、可选双轨
+分离及正式产物导出。音频只在本机处理，模型权重另存于 Application Support。
+候选包尚未发布 GitHub Release，也没有 Developer ID 签名或 Apple 公证。参见
+[`docs/macos-unsigned-install.md`](docs/macos-unsigned-install.md) 与
+[`docs/macos-runtime.md`](docs/macos-runtime.md)。
 
 - ASR transcription 只存在于显式的 `candidate extract` 工作流中，不属于可信歌词对齐默认主路径。
 - 不联网匹配歌词，不改写用户歌词，不上传音频。

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "python": {
+    "provider": "astral-sh/python-build-standalone",
+    "version": "3.11.15",
+    "release": "20260510",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260510/cpython-3.11.15%2B20260510-aarch64-apple-darwin-install_only_stripped.tar.gz",
+    "sha256": "fdfc363b538662eb7441a14e06f72c4a992c56af7f401f5730ea5081f8f8ad6e"
+  },
+  "ffmpeg": {
+    "provider": "FFmpeg official source release",
+    "version": "7.1.3",
+    "url": "https://ffmpeg.org/releases/ffmpeg-7.1.3.tar.xz",
+    "sha256": "f0bf043299db9e3caacb435a712fc541fbb07df613c4b893e8b77e67baf3adbe",
+    "license": "LGPL-2.1-or-later",
+    "configure": [
+      "--prefix=/xingyu-runtime",
+      "--arch=arm64",
+      "--cc=clang",
+      "--disable-gpl",
+      "--disable-nonfree",
+      "--disable-doc",
+      "--disable-debug",
+      "--disable-autodetect",
+      "--enable-shared",
+      "--disable-static",
+      "--enable-ffmpeg",
+      "--enable-ffprobe"
+    ]
+  },
+  "nltk": {
+    "punktTabUrl": "https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/tokenizers/punkt_tab.zip",
+    "punktTabSha256": "e57f64187974277726a3417ca6f181ec5403676c717672eef6a748a7b20e0106"
+  },
+  "pythonBuildTools": [
+    {
+      "name": "Cython",
+      "version": "3.2.8",
+      "url": "https://files.pythonhosted.org/packages/25/44/379c4f16d6b9e920ca8d00dc3bb96ea3f4fb8b73ed8b99c136a7667e2605/cython-3.2.8-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "a7761e1a97081b707a9ea4fb7c8ecdeddcc6b5ae00dda0f0b7bbf933c1b599f9"
+    }
+  ],
+  "pythonSdists": [
+    {
+      "name": "av",
+      "version": "14.4.0",
+      "url": "https://files.pythonhosted.org/packages/86/f6/0b473dab52dfdea05f28f3578b1c56b6c796ce85e76951bab7c4e38d5a74/av-14.4.0.tar.gz",
+      "sha256": "3ecbf803a7fdf67229c0edada0830d6bfaea4d10bfb24f0c3f4e607cd1064b42",
+      "buildBackend": "PyAV sdist against pinned LGPL-only FFmpeg 7.1.3",
+      "sourceDateEpoch": 1780790400,
+      "ffmpegPrefixRequired": true
+    },
+    {
+      "name": "antlr4-python3-runtime",
+      "version": "4.9.3",
+      "url": "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d19459005ca000b6e7012f2f1ca597746cbcd1fbfe5e/antlr4-python3-runtime-4.9.3.tar.gz",
+      "sha256": "f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b",
+      "buildBackend": "setuptools 82.0.1 from python-build-standalone",
+      "sourceDateEpoch": 1710000000
+    },
+    {
+      "name": "jieba",
+      "version": "0.42.1",
+      "url": "https://files.pythonhosted.org/packages/c6/cb/18eeb235f833b726522d7ebed54f2278ce28ba9438e3135ab0278d9792a2/jieba-0.42.1.tar.gz",
+      "sha256": "055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2",
+      "buildBackend": "setuptools 82.0.1 from python-build-standalone",
+      "sourceDateEpoch": 1710000000
+    }
+  ]
+}

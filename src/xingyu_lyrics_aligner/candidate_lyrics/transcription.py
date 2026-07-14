@@ -10,13 +10,16 @@ import argparse
 import json
 import re
 import shutil
-import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
+from xingyu_lyrics_aligner.audio_separation import (
+    AudioSeparationError,
+    separate_vocals_and_accompaniment,
+)
 from xingyu_lyrics_aligner.candidate_lyrics.config import (
     DraftExtractionConfig,
     resolve_draft_extraction_config,
@@ -244,40 +247,20 @@ def write_report_json(report: dict[str, object], path: Path) -> None:
 
 
 def separate_vocals_with_demucs(audio_path: Path, output_dir: Path) -> Path:
-    """Run Demucs two-stem separation and copy vocals.wav into the output dir."""
+    """Preserve the legacy candidate flow while using the shared separator."""
 
-    if shutil.which("demucs") is None:
-        raise CandidateLyricsError(
-            "未在 PATH 中找到 Demucs。请执行 `python -m pip install demucs` 安装。"
-        )
-
-    work_dir = output_dir / "_demucs"
-    command = [
-        "demucs",
-        "--two-stems",
-        "vocals",
-        "-o",
-        str(work_dir),
-        str(audio_path),
-    ]
     try:
-        subprocess.run(command, check=True, stderr=subprocess.PIPE, text=True)
-    except subprocess.CalledProcessError as exc:
-        stderr = exc.stderr or ""
-        if "TorchCodec is required" in stderr or "No module named 'torchcodec'" in stderr:
+        separated = separate_vocals_and_accompaniment(audio_path, output_dir)
+    except AudioSeparationError as exc:
+        if "TorchCodec" in str(exc):
             raise CandidateLyricsError(
                 "Demucs 保存 vocals.wav 失败：当前环境缺少 TorchCodec。"
                 "请执行 `python -m pip install torchcodec`，然后重新运行命令。"
             ) from exc
-        raise CandidateLyricsError(f"Demucs 执行失败，退出码 {exc.returncode}。\n{stderr}") from exc
-
-    stem_name = audio_path.stem
-    candidates = sorted(work_dir.glob(f"*/{stem_name}/vocals.wav"))
-    if not candidates:
-        raise CandidateLyricsError(f"Demucs 已结束，但未在 {work_dir} 下找到 vocals.wav。")
+        raise CandidateLyricsError(str(exc)) from exc
 
     vocals_path = output_dir / "vocals.wav"
-    shutil.copy2(candidates[0], vocals_path)
+    shutil.copy2(separated.vocals, vocals_path)
     return vocals_path
 
 

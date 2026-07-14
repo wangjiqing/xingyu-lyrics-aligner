@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "source": "python-build-standalone 20260510 install_only_stripped archive",
+  "components": [
+    {"name":"CPython","version":"3.11.15","license":"PSF-2.0","licenseFile":"Python-LICENSE.txt","sourceUrl":"https://www.python.org/downloads/release/python-31115/"},
+    {"name":"OpenSSL","version":"3.5.6","license":"Apache-2.0","licenseFile":"Apache-2.0.txt","sourceUrl":"https://www.openssl.org/source/"},
+    {"name":"SQLite","version":"3.50.4","license":"blessing","licenseFile":"SQLite-Public-Domain.txt","sourceUrl":"https://sqlite.org/copyright.html"},
+    {"name":"Tcl/Tk","version":"9.0.3","license":"TCL","licenseFile":"Tcl-Tk.txt","sourceUrl":"https://www.tcl-lang.org/software/tcltk/license.html"},
+    {"name":"libffi","version":"python-build-standalone bundled","license":"MIT","licenseFile":"MIT.txt","sourceUrl":"https://github.com/libffi/libffi"},
+    {"name":"xz/liblzma","version":"python-build-standalone bundled","license":"0BSD","licenseFile":"XZ-0BSD.txt","sourceUrl":"https://tukaani.org/xz/"},
+    {"name":"zlib","version":"1.2.12","license":"Zlib","licenseFile":"Zlib.txt","sourceUrl":"https://zlib.net/"}
+  ]
+}

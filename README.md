@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment CLI. v0.6.1
+Xingyu Lyrics Aligner is a local-first trusted-lyrics alignment tool. v0.7.0
 aligns local audio against user-provided lyric lines, defines SWLRC v1, keeps
 optional ASR candidate-lyrics extraction for manual review, and adds an official
 CPU Docker image plus an optional shared-directory Worker for Docker Compose
@@ -19,7 +19,7 @@ xingyu-align
 `xingyu-lyrics-aligner` is kept as a compatibility alias. `python -m
 xingyu_lyrics_aligner.cli` is only intended for development and troubleshooting.
 
-## What v0.6.1 Can Do
+## What v0.7.0 Can Do
 
 - Read a local audio file and a trusted line-by-line lyrics text file.
 - Build Chinese CTC alignment text without rewriting the display lyrics.
@@ -62,6 +62,17 @@ are not part of the lyric timeline. Existing consumers may ignore these additive
   is an optional deployment adapter for shared-directory integrations.
 - macOS MPS may fall back to CPU for WhisperX alignment.
 - Windows CUDA is not covered by the macOS installer.
+
+The native SwiftUI macOS Desktop MVP is implemented under [`apps/macos`](apps/macos)
+for Apple Silicon and macOS 14+. The v0.7.0 development branch can build an
+unsigned DMG candidate with bundled Python/FFmpeg, local readiness, explicit
+model installation, trusted-lyrics processing, optional two-track separation,
+and artifact export. Audio stays local and model weights are downloaded
+separately into Application Support. This is not a published GitHub Release and
+has no Developer ID signature or notarization. See
+[`docs/macos-unsigned-install.md`](docs/macos-unsigned-install.md),
+[`docs/macos-runtime.md`](docs/macos-runtime.md), and
+[`docs/macos-model-management.md`](docs/macos-model-management.md).
 - LRC display timing can vary by player because each player decides how to render
   line transitions.
 - SWLRC token timing quality depends on the upstream alignment result. Missing
@@ -294,6 +305,10 @@ sudo chown -R 10001:10001 alignment-jobs aligner-model-cache
 ```
 
 ## Docker Worker
+
+The schema v3 `DESKTOP_LYRIC_PROCESSING` task provides one-shot trusted-lyrics
+alignment, optional two-track export, formal artifacts, and cooperative
+cancellation. See [Desktop Worker Protocol](docs/desktop-worker-protocol.md).
 
 For Xingyu Audio Library Docker Compose deployments, the optional Worker can poll
 a shared jobs directory. v0.5.0 supports two task types:

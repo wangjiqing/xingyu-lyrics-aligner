@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from argparse import Namespace
@@ -22,6 +23,11 @@ from xingyu_lyrics_aligner.candidate_lyrics.transcription import (
     extract_candidate_lyrics,
 )
 from xingyu_lyrics_aligner.commands.align import align_command
+from xingyu_lyrics_aligner.desktop_models import (
+    DesktopDataPaths,
+    desktop_readiness,
+    install_model,
+)
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.doctor import run_doctor
 from xingyu_lyrics_aligner.i18n import configure_locale, normalize_locale
@@ -61,10 +67,16 @@ worker_app = typer.Typer(
     no_args_is_help=True,
     context_settings=HELP_CONTEXT_SETTINGS,
 )
+desktop_app = typer.Typer(
+    help="Machine-readable macOS Desktop integration commands.",
+    no_args_is_help=True,
+    context_settings=HELP_CONTEXT_SETTINGS,
+)
 app.add_typer(models_app, name="models")
 app.add_typer(config_app, name="config")
 app.add_typer(candidate_app, name="candidate")
 app.add_typer(worker_app, name="worker")
+app.add_typer(desktop_app, name="desktop")
 
 MODEL_DISPLAY_KEYS = {
     "forced-aligner": "models.slot.aligner",
@@ -424,6 +436,54 @@ def models_pull(
     typer.echo(f"actual_alignment_device: {result.actual_device}")
     for warning in result.warnings:
         typer.echo(f"warning: {warning}")
+
+
+@models_app.command("install", context_settings=HELP_CONTEXT_SETTINGS)
+def models_install(
+    model_id: Annotated[str, typer.Argument(help="Stable Desktop model ID.")],
+    data_dir: Annotated[
+        Path | None,
+        typer.Option("--data-dir", help="Desktop Application Support root."),
+    ] = None,
+    json_events: Annotated[
+        bool,
+        typer.Option("--json-events", help="Write one JSON event per stdout line."),
+    ] = False,
+) -> None:
+    """Install one pinned Desktop model into the managed model directory."""
+
+    try:
+        install_model(
+            model_id,
+            paths=DesktopDataPaths.resolve(data_dir),
+            emit=typer.echo if json_events else typer.echo,
+        )
+    except KeyboardInterrupt as exc:
+        raise typer.Exit(code=130) from exc
+    except Exception as exc:
+        if not json_events:
+            typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+
+
+@desktop_app.command("readiness", context_settings=HELP_CONTEXT_SETTINGS)
+def desktop_readiness_command(
+    data_dir: Annotated[
+        Path | None,
+        typer.Option("--data-dir", help="Desktop Application Support root."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Write the readiness schema as JSON."),
+    ] = False,
+) -> None:
+    """Inspect runtime tools and managed Desktop models without downloading."""
+
+    payload = desktop_readiness(DesktopDataPaths.resolve(data_dir))
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        return
+    typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 @worker_app.command(

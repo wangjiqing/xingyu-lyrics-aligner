@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from xingyu_lyrics_aligner.alignment.pipeline import AlignRequest, AlignRunResult, run_alignment
+from xingyu_lyrics_aligner.alignment.pipeline import (
+    AlignmentPipelineStage,
+    AlignRequest,
+    AlignRunResult,
+    run_alignment,
+)
 from xingyu_lyrics_aligner.device import DeviceStrategy
 
 
@@ -17,6 +23,7 @@ class AlignLyricsOptions:
     lrc_offset_ms: int = 0
     overwrite: bool = False
     debug_output: bool = False
+    stage_observer: Callable[[AlignmentPipelineStage], None] | None = None
 
 
 def align_lyrics(
@@ -42,5 +49,6 @@ def align_lyrics(
             lrc_offset_ms=resolved_options.lrc_offset_ms,
             overwrite=resolved_options.overwrite,
             debug_output=resolved_options.debug_output,
+            stage_observer=resolved_options.stage_observer,
         )
     )

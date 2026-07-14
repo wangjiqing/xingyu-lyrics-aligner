@@ -4,11 +4,16 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from pytest import MonkeyPatch
 
 from xingyu_lyrics_aligner.alignment.backmap import CharacterTiming
 from xingyu_lyrics_aligner.alignment.ctc import DeviceResolution
-from xingyu_lyrics_aligner.alignment.pipeline import AlignRequest, run_alignment
+from xingyu_lyrics_aligner.alignment.pipeline import (
+    AlignmentPipelineStage,
+    AlignRequest,
+    run_alignment,
+)
 from xingyu_lyrics_aligner.device import DeviceStrategy
 from xingyu_lyrics_aligner.formats.swlrc import parse_swlrc
 
@@ -18,6 +23,9 @@ class FakeAligner:
         self.align_model_name = "fake-ctc"
         self.device = DeviceResolution(requested="cpu", actual="cpu", warnings=[])
 
+    def load(self) -> None:
+        pass
+
     def align(self, segment: object, audio: object) -> list[CharacterTiming]:
         text = segment.text
         start = segment.start
@@ -25,6 +33,45 @@ class FakeAligner:
             CharacterTiming(text=char, start=start + index * 0.1, end=start + index * 0.1 + 0.05)
             for index, char in enumerate(text)
         ]
+
+
+def test_pipeline_reports_real_stage_boundaries_and_propagates_observer_stop(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.alignment.pipeline.load_audio",
+        lambda path: SimpleNamespace(samples=object(), duration_seconds=10.0),
+    )
+    monkeypatch.setattr(
+        "xingyu_lyrics_aligner.alignment.pipeline.WhisperXCtcAligner",
+        FakeAligner,
+    )
+    audio = tmp_path / "song.wav"
+    lyrics = tmp_path / "lyrics.txt"
+    output = tmp_path / "out"
+    audio.write_bytes(b"fake")
+    lyrics.write_text("星语\n", encoding="utf-8")
+    observed: list[AlignmentPipelineStage] = []
+
+    def observer(stage: AlignmentPipelineStage) -> None:
+        observed.append(stage)
+        if stage == AlignmentPipelineStage.EXPORTING_OUTPUTS:
+            raise RuntimeError("stop before formal export")
+
+    with pytest.raises(RuntimeError, match="stop before formal export"):
+        run_alignment(
+            AlignRequest(
+                audio=audio,
+                lyrics=lyrics,
+                output_dir=output,
+                language="zh",
+                device=DeviceStrategy.CPU,
+                stage_observer=observer,
+            )
+        )
+
+    assert observed == list(AlignmentPipelineStage)
+    assert not (output / "lyrics.lrc").exists()
 
 
 def test_global_and_sectional_pipeline_outputs_share_schema(

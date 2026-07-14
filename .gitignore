@@ -10,6 +10,7 @@ __pycache__/
 htmlcov/
 dist/
 build/
+.build-cache/
 
 # Virtual environments
 .venv/
@@ -20,6 +21,8 @@ env/
 .idea/
 .vscode/
 .DS_Store
+xcuserdata/
+*.xcuserstate
 
 # Local model/data artifacts
 models/*

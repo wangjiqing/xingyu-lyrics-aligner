@@ -1,0 +1,22 @@
+星语歌词对齐器 0.7.0（Apple Silicon / macOS 14+）
+
+本候选版本未使用 Apple Developer ID 签名，也未经过 Apple notarization。
+
+安装：
+1. 将“星语歌词对齐器.app”拖入右侧 Applications。
+2. 首次打开时，如果 macOS 阻止运行，请打开“系统设置 → 隐私与安全性”，
+   在对应提示处选择“仍要打开”，然后再次确认。
+
+仅当你已经确认 DMG 来源可信时，先完全退出 App，再在终端执行备用命令：
+
+  xattr -dr com.apple.quarantine "/Applications/星语歌词对齐器.app"
+
+该命令只移除这个 App 的 quarantine 标记。不要对未知来源软件执行，也不要关闭
+整个系统的 Gatekeeper；通常无需 sudo。
+
+音频仅在本机处理。首次使用需由用户确认下载约 1.28 GB 的中文歌词对齐模型；
+人声/伴奏导出还需约 84 MB 的可选分离模型。模型保存在：
+
+  ~/Library/Application Support/XingyuLyricsAligner/Models/
+
+模型权重不包含在 DMG 中。任务处理还会产生临时 WAV，请预留额外磁盘空间。

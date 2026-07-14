@@ -1,0 +1,1372 @@
+{
+  "schemaVersion": 1,
+  "platform": "macOS",
+  "architecture": "arm64",
+  "pythonVersion": "3.11.15",
+  "index": "https://pypi.org/simple",
+  "projectWheelBuiltFrom": "repository source with SOURCE_DATE_EPOCH",
+  "wheels": [
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.6.2",
+      "filename": "aiohappyeyeballs-2.6.2-py3-none-any.whl",
+      "sha256": "4708045e2d7a6c6bdf8aafa8ed39649eaf926a4543b54560659129e3365953c4",
+      "sizeBytes": 15062,
+      "source": "https://pypi.org/simple/aiohappyeyeballs/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.14.1",
+      "filename": "aiohttp-3.14.1-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "d44ec478e713ee7f29b439f7eb8dc2b9d4079e11ae114d2c2ac3d5daf30516c8",
+      "sizeBytes": 514139,
+      "source": "https://pypi.org/simple/aiohttp/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "filename": "aiosignal-1.4.0-py3-none-any.whl",
+      "sha256": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e",
+      "sizeBytes": 7490,
+      "source": "https://pypi.org/simple/aiosignal/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "alembic",
+      "version": "1.18.4",
+      "filename": "alembic-1.18.4-py3-none-any.whl",
+      "sha256": "a5ed4adcf6d8a4cb575f3d759f071b03cd6e5c7618eb796cb52497be25bfe19a",
+      "sizeBytes": 263893,
+      "source": "https://pypi.org/simple/alembic/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.4",
+      "filename": "annotated_doc-0.0.4-py3-none-any.whl",
+      "sha256": "571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320",
+      "sizeBytes": 5303,
+      "source": "https://pypi.org/simple/annotated-doc/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.7.0",
+      "filename": "annotated_types-0.7.0-py3-none-any.whl",
+      "sha256": "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53",
+      "sizeBytes": 13643,
+      "source": "https://pypi.org/simple/annotated-types/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "antlr4-python3-runtime",
+      "version": "4.9.3",
+      "filename": "antlr4_python3_runtime-4.9.3-py3-none-any.whl",
+      "sha256": "a7f07c65a2bfcac4ca0f796c148bdecc2f961a02478f8416c178200747614860",
+      "sizeBytes": 144590,
+      "source": "https://pypi.org/simple/antlr4-python3-runtime/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false,
+      "builtFromSdist": {
+        "name": "antlr4-python3-runtime",
+        "version": "4.9.3",
+        "url": "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d19459005ca000b6e7012f2f1ca597746cbcd1fbfe5e/antlr4-python3-runtime-4.9.3.tar.gz",
+        "sha256": "f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b",
+        "buildBackend": "setuptools 82.0.1 from python-build-standalone",
+        "sourceDateEpoch": 1710000000
+      }
+    },
+    {
+      "name": "asteroid-filterbanks",
+      "version": "0.4.0",
+      "filename": "asteroid_filterbanks-0.4.0-py3-none-any.whl",
+      "sha256": "4932ac8b6acc6e08fb87cbe8ece84215b5a74eee284fe83acf3540a72a02eaf5",
+      "sizeBytes": 29912,
+      "source": "https://pypi.org/simple/asteroid-filterbanks/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "filename": "attrs-26.1.0-py3-none-any.whl",
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+      "sizeBytes": 67548,
+      "source": "https://pypi.org/simple/attrs/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "av",
+      "version": "14.4.0",
+      "filename": "av-14.4.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "58381801031fb6fa0f4d1c3bb65ce6d67136cfa98f74ad9a6be16c3c5c355b08",
+      "sizeBytes": 1979104,
+      "source": "https://pypi.org/simple/av/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false,
+      "builtFromSdist": {
+        "name": "av",
+        "version": "14.4.0",
+        "url": "https://files.pythonhosted.org/packages/86/f6/0b473dab52dfdea05f28f3578b1c56b6c796ce85e76951bab7c4e38d5a74/av-14.4.0.tar.gz",
+        "sha256": "3ecbf803a7fdf67229c0edada0830d6bfaea4d10bfb24f0c3f4e607cd1064b42",
+        "buildBackend": "PyAV sdist against pinned LGPL-only FFmpeg 7.1.3",
+        "sourceDateEpoch": 1780790400,
+        "ffmpegPrefixRequired": true
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.6.17",
+      "filename": "certifi-2026.6.17-py3-none-any.whl",
+      "sha256": "2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db",
+      "sizeBytes": 133289,
+      "source": "https://pypi.org/simple/certifi/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.4.7",
+      "filename": "charset_normalizer-3.4.7-cp311-cp311-macosx_10_9_universal2.whl",
+      "sha256": "7641bb8895e77f921102f72833904dcd9901df5d6d72a2ab8f31d04b7e51e4e7",
+      "sizeBytes": 309705,
+      "source": "https://pypi.org/simple/charset-normalizer/",
+      "wheelTags": [
+        "cp311-cp311-macosx_10_9_universal2"
+      ],
+      "thinInstalledMachOToArm64": true
+    },
+    {
+      "name": "click",
+      "version": "8.4.1",
+      "filename": "click-8.4.1-py3-none-any.whl",
+      "sha256": "482be17c6991b8c19c5429a1e995d9b0efdbb63172824c41f99965dc0ade8ec2",
+      "sizeBytes": 116639,
+      "source": "https://pypi.org/simple/click/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "colorlog",
+      "version": "6.10.1",
+      "filename": "colorlog-6.10.1-py3-none-any.whl",
+      "sha256": "2d7e8348291948af66122cff006c9f8da6255d224e7cf8e37d8de2df3bad8c9c",
+      "sizeBytes": 11743,
+      "source": "https://pypi.org/simple/colorlog/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "contourpy",
+      "version": "1.3.3",
+      "filename": "contourpy-1.3.3-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "23416f38bfd74d5d28ab8429cc4d63fa67d5068bd711a85edb1c3fb0c3e2f381",
+      "sizeBytes": 270149,
+      "source": "https://pypi.org/simple/contourpy/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "ctranslate2",
+      "version": "4.8.0",
+      "filename": "ctranslate2-4.8.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "9f56f8de6e6e036a306d427b86d86964076b614e2358b923f93fa160139ac6f5",
+      "sizeBytes": 1269068,
+      "source": "https://pypi.org/simple/ctranslate2/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "cycler",
+      "version": "0.12.1",
+      "filename": "cycler-0.12.1-py3-none-any.whl",
+      "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
+      "sizeBytes": 8321,
+      "source": "https://pypi.org/simple/cycler/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "demucs",
+      "version": "4.1.0",
+      "filename": "demucs-4.1.0-py3-none-any.whl",
+      "sha256": "4916a804702033ce934a6cdfa7e38dde03f7a7a6e85f41d0120eefe9e2966758",
+      "sizeBytes": 100567,
+      "source": "https://pypi.org/simple/demucs/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "einops",
+      "version": "0.8.2",
+      "filename": "einops-0.8.2-py3-none-any.whl",
+      "sha256": "54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193",
+      "sizeBytes": 65638,
+      "source": "https://pypi.org/simple/einops/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "faster-whisper",
+      "version": "1.2.1",
+      "filename": "faster_whisper-1.2.1-py3-none-any.whl",
+      "sha256": "79a66ad50688c0b794dd501dc340a736992a6342f7f95e5811be60b5224a26a7",
+      "sizeBytes": 1118909,
+      "source": "https://pypi.org/simple/faster-whisper/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "filelock",
+      "version": "3.29.4",
+      "filename": "filelock-3.29.4-py3-none-any.whl",
+      "sha256": "dac1648087d5115554850d113e7dd8c83ab2d38e3435dde2d4f163847e57b767",
+      "sizeBytes": 42757,
+      "source": "https://pypi.org/simple/filelock/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "filename": "flatbuffers-25.12.19-py2.py3-none-any.whl",
+      "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4",
+      "sizeBytes": 26661,
+      "source": "https://pypi.org/simple/flatbuffers/",
+      "wheelTags": [
+        "py2-none-any",
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "fonttools",
+      "version": "4.63.0",
+      "filename": "fonttools-4.63.0-cp311-cp311-macosx_10_9_universal2.whl",
+      "sha256": "2b8ae05d9eacf6081414d759c0a352769ac28ce31280d6bb8e77b03f9e3c449f",
+      "sizeBytes": 2881793,
+      "source": "https://pypi.org/simple/fonttools/",
+      "wheelTags": [
+        "cp311-cp311-macosx_10_9_universal2"
+      ],
+      "thinInstalledMachOToArm64": true
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "filename": "frozenlist-1.8.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "fa47e444b8ba08fffd1c18e8cdb9a75db1b6a27f17507522834ad13ed5922b93",
+      "sizeBytes": 50119,
+      "source": "https://pypi.org/simple/frozenlist/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.6.0",
+      "filename": "fsspec-2026.6.0-py3-none-any.whl",
+      "sha256": "02e0b71817df9b2169dc30a16832045764def1191b43dcff5bb85bdee212d2a1",
+      "sizeBytes": 203949,
+      "source": "https://pypi.org/simple/fsspec/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "googleapis-common-protos",
+      "version": "1.75.0",
+      "filename": "googleapis_common_protos-1.75.0-py3-none-any.whl",
+      "sha256": "961ed60399c457ceb0ee8f285a84c870aabc9c6a832b9d37bb281b5bebde43ed",
+      "sizeBytes": 300631,
+      "source": "https://pypi.org/simple/googleapis-common-protos/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "grpcio",
+      "version": "1.81.1",
+      "filename": "grpcio-1.81.1-cp311-cp311-macosx_11_0_universal2.whl",
+      "sha256": "b137f4bf3ada9dc44d411478decc6ff09a79ed30b306cd2abaa98408c3588137",
+      "sizeBytes": 12074277,
+      "source": "https://pypi.org/simple/grpcio/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_universal2"
+      ],
+      "thinInstalledMachOToArm64": true
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.5.1",
+      "filename": "hf_xet-1.5.1-cp37-abi3-macosx_11_0_arm64.whl",
+      "sha256": "94e761bbd266bf4c03cee73753916062665ce8365aa40ed321f45afcb934b41e",
+      "sizeBytes": 3845354,
+      "source": "https://pypi.org/simple/hf-xet/",
+      "wheelTags": [
+        "cp37-abi3-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "huggingface_hub",
+      "version": "0.36.2",
+      "filename": "huggingface_hub-0.36.2-py3-none-any.whl",
+      "sha256": "48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270",
+      "sizeBytes": 566395,
+      "source": "https://pypi.org/simple/huggingface-hub/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "idna",
+      "version": "3.18",
+      "filename": "idna-3.18-py3-none-any.whl",
+      "sha256": "7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2",
+      "sizeBytes": 65455,
+      "source": "https://pypi.org/simple/idna/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "jieba",
+      "version": "0.42.1",
+      "filename": "jieba-0.42.1-py3-none-any.whl",
+      "sha256": "8f28cf7b2f2d60ee8f7a85add3f52a584e80ecfcc4f8a1af226595d8386156ce",
+      "sizeBytes": 19314509,
+      "source": "https://pypi.org/simple/jieba/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false,
+      "builtFromSdist": {
+        "name": "jieba",
+        "version": "0.42.1",
+        "url": "https://files.pythonhosted.org/packages/c6/cb/18eeb235f833b726522d7ebed54f2278ce28ba9438e3135ab0278d9792a2/jieba-0.42.1.tar.gz",
+        "sha256": "055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2",
+        "buildBackend": "setuptools 82.0.1 from python-build-standalone",
+        "sourceDateEpoch": 1710000000
+      }
+    },
+    {
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "filename": "jinja2-3.1.6-py3-none-any.whl",
+      "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+      "sizeBytes": 134899,
+      "source": "https://pypi.org/simple/jinja2/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "joblib",
+      "version": "1.5.3",
+      "filename": "joblib-1.5.3-py3-none-any.whl",
+      "sha256": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713",
+      "sizeBytes": 309071,
+      "source": "https://pypi.org/simple/joblib/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "julius",
+      "version": "0.2.8",
+      "filename": "julius-0.2.8-py3-none-any.whl",
+      "sha256": "6891235cbc355e629d839f87489bff8ca46e57a0e7cc35abb909c7a2aa538c25",
+      "sizeBytes": 21819,
+      "source": "https://pypi.org/simple/julius/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "kiwisolver",
+      "version": "1.5.0",
+      "filename": "kiwisolver-1.5.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "0df54df7e686afa55e6f21fb86195224a6d9beb71d637e8d7920c95cf0f89aac",
+      "sizeBytes": 63911,
+      "source": "https://pypi.org/simple/kiwisolver/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "lameenc",
+      "version": "1.8.4",
+      "filename": "lameenc-1.8.4-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "abedb78eebd63a226d1fdf8c75c2cb0d1b4df3d1227585e3e8d5f6b9cff22cb2",
+      "sizeBytes": 183347,
+      "source": "https://pypi.org/simple/lameenc/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "librt",
+      "version": "0.13.0",
+      "filename": "librt-0.13.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "34bc7938b9fdf14fe32a406c19c71faf894c5cee7e7474bd0be2f17200b82d14",
+      "sizeBytes": 153036,
+      "source": "https://pypi.org/simple/librt/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "lightning",
+      "version": "2.6.5",
+      "filename": "lightning-2.6.5-py3-none-any.whl",
+      "sha256": "3702fb7ef4ab51a8c3d4a140f4674514fe72973a9673dfa05e07a078e2767389",
+      "sizeBytes": 848611,
+      "source": "https://pypi.org/simple/lightning/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "lightning-utilities",
+      "version": "0.15.3",
+      "filename": "lightning_utilities-0.15.3-py3-none-any.whl",
+      "sha256": "6c55f1bee70084a1cbeaa41ada96e4b3a0fea5909e844dd335bd80f5a73c5f91",
+      "sizeBytes": 31906,
+      "source": "https://pypi.org/simple/lightning-utilities/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "Mako",
+      "version": "1.3.12",
+      "filename": "mako-1.3.12-py3-none-any.whl",
+      "sha256": "8f61569480282dbf557145ce441e4ba888be453c30989f879f0d652e39f53ea9",
+      "sizeBytes": 78521,
+      "source": "https://pypi.org/simple/mako/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "filename": "markdown_it_py-4.2.0-py3-none-any.whl",
+      "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+      "sizeBytes": 91687,
+      "source": "https://pypi.org/simple/markdown-it-py/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.3",
+      "filename": "markupsafe-3.0.3-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "4bd4cd07944443f5a265608cc6aab442e4f74dff8088b0dfc8238647b8f6ae9a",
+      "sizeBytes": 12058,
+      "source": "https://pypi.org/simple/markupsafe/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "matplotlib",
+      "version": "3.11.0",
+      "filename": "matplotlib-3.11.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "57baa92fdc82948ed716eae6d2579d4d6f40965cd8d2f416755b4a72580a3233",
+      "sizeBytes": 9264669,
+      "source": "https://pypi.org/simple/matplotlib/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "filename": "mdurl-0.1.2-py3-none-any.whl",
+      "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+      "sizeBytes": 9979,
+      "source": "https://pypi.org/simple/mdurl/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "filename": "mpmath-1.3.0-py3-none-any.whl",
+      "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
+      "sizeBytes": 536198,
+      "source": "https://pypi.org/simple/mpmath/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "multidict",
+      "version": "6.7.1",
+      "filename": "multidict-6.7.1-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "f2a0a924d4c2e9afcd7ec64f9de35fcd96915149b2216e1cb2c10a56df483855",
+      "sizeBytes": 44356,
+      "source": "https://pypi.org/simple/multidict/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "narwhals",
+      "version": "2.22.1",
+      "filename": "narwhals-2.22.1-py3-none-any.whl",
+      "sha256": "60567d774edf77db53906f89d9fbd164e66e56d66d388e1e6990f17ac33cfb53",
+      "sizeBytes": 454815,
+      "source": "https://pypi.org/simple/narwhals/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "filename": "networkx-3.6.1-py3-none-any.whl",
+      "sha256": "d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762",
+      "sizeBytes": 2068504,
+      "source": "https://pypi.org/simple/networkx/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "nltk",
+      "version": "3.9.4",
+      "filename": "nltk-3.9.4-py3-none-any.whl",
+      "sha256": "f2fa301c3a12718ce4a0e9305c5675299da5ad9e26068218b69d692fda84828f",
+      "sizeBytes": 1552087,
+      "source": "https://pypi.org/simple/nltk/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "numpy",
+      "version": "2.4.6",
+      "filename": "numpy-2.4.6-cp311-cp311-macosx_14_0_arm64.whl",
+      "sha256": "4cfe66903cc32a9921a6733d96b19bb6abf310397581bbad89c228f5abaf0ee8",
+      "sizeBytes": 5469159,
+      "source": "https://pypi.org/simple/numpy/",
+      "wheelTags": [
+        "cp311-cp311-macosx_14_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "omegaconf",
+      "version": "2.3.1",
+      "filename": "omegaconf-2.3.1-py3-none-any.whl",
+      "sha256": "3d701d14e9a8828f1edd28bb70b725908b34277cdd72cf7d6a83f94dadc6b6a0",
+      "sizeBytes": 79502,
+      "source": "https://pypi.org/simple/omegaconf/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "onnxruntime",
+      "version": "1.27.0",
+      "filename": "onnxruntime-1.27.0-cp311-cp311-macosx_14_0_arm64.whl",
+      "sha256": "8ba14a38c570087f3cdb8cfba33f7a38a1e826c1e5b29e17c28ceda0cc910016",
+      "sizeBytes": 18416484,
+      "source": "https://pypi.org/simple/onnxruntime/",
+      "wheelTags": [
+        "cp311-cp311-macosx_14_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.42.1",
+      "filename": "opentelemetry_api-1.42.1-py3-none-any.whl",
+      "sha256": "51a69edacadbc03a8950ace1c4c21099cacc538820ac2c9e36277e78cebba714",
+      "sizeBytes": 61311,
+      "source": "https://pypi.org/simple/opentelemetry-api/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-exporter-otlp",
+      "version": "1.42.1",
+      "filename": "opentelemetry_exporter_otlp-1.42.1-py3-none-any.whl",
+      "sha256": "aedd54545bb0587cd45210abdc8be545af9c01413f3307786e276df1e3c83bee",
+      "sizeBytes": 6733,
+      "source": "https://pypi.org/simple/opentelemetry-exporter-otlp/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-common",
+      "version": "1.42.1",
+      "filename": "opentelemetry_exporter_otlp_proto_common-1.42.1-py3-none-any.whl",
+      "sha256": "f48d395ab815b444da118868977e9798ea354c25737d5cf39578ae894011c140",
+      "sizeBytes": 17327,
+      "source": "https://pypi.org/simple/opentelemetry-exporter-otlp-proto-common/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-grpc",
+      "version": "1.42.1",
+      "filename": "opentelemetry_exporter_otlp_proto_grpc-1.42.1-py3-none-any.whl",
+      "sha256": "0ae1177e2038b18a929b3098215243631ef91136cba26b7e2b12790ceb7e87cc",
+      "sizeBytes": 19617,
+      "source": "https://pypi.org/simple/opentelemetry-exporter-otlp-proto-grpc/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-http",
+      "version": "1.42.1",
+      "filename": "opentelemetry_exporter_otlp_proto_http-1.42.1-py3-none-any.whl",
+      "sha256": "00a16da1b312a1d6c7233d600d557c91df71125af73020f3b9a7765bd699d59d",
+      "sizeBytes": 21793,
+      "source": "https://pypi.org/simple/opentelemetry-exporter-otlp-proto-http/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-proto",
+      "version": "1.42.1",
+      "filename": "opentelemetry_proto-1.42.1-py3-none-any.whl",
+      "sha256": "dedb74cba2886c59c7789b227a7a670613025a07489040050aedff6e5c0fb43c",
+      "sizeBytes": 71782,
+      "source": "https://pypi.org/simple/opentelemetry-proto/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-sdk",
+      "version": "1.42.1",
+      "filename": "opentelemetry_sdk-1.42.1-py3-none-any.whl",
+      "sha256": "083cd4bbfaa5aa7b5a9e552430d9951219967cfb27aa61feb13a77aba1fc839d",
+      "sizeBytes": 170907,
+      "source": "https://pypi.org/simple/opentelemetry-sdk/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "opentelemetry-semantic-conventions",
+      "version": "0.63b1",
+      "filename": "opentelemetry_semantic_conventions-0.63b1-py3-none-any.whl",
+      "sha256": "dfe5ef4dee82586b746f522b818ceb298d00b3d59f660042bd79404bff8d0682",
+      "sizeBytes": 203713,
+      "source": "https://pypi.org/simple/opentelemetry-semantic-conventions/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "optuna",
+      "version": "4.9.0",
+      "filename": "optuna-4.9.0-py3-none-any.whl",
+      "sha256": "f52f3be6148654850c92a5860d398fd88ec6b2c84ab68d9c3d07dcff02e7afee",
+      "sizeBytes": 425553,
+      "source": "https://pypi.org/simple/optuna/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "packaging",
+      "version": "26.2",
+      "filename": "packaging-26.2-py3-none-any.whl",
+      "sha256": "5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e",
+      "sizeBytes": 100195,
+      "source": "https://pypi.org/simple/packaging/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pandas",
+      "version": "3.0.3",
+      "filename": "pandas-3.0.3-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "4e15135e2ee5df1063313e2425ceef8ac0f4ae775893815b0923651b806a5639",
+      "sizeBytes": 9938250,
+      "source": "https://pypi.org/simple/pandas/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pillow",
+      "version": "12.2.0",
+      "filename": "pillow-12.2.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "71cde9a1e1551df7d34a25462fc60325e8a11a82cc2e2f54578e5e9a1e153d65",
+      "sizeBytes": 4695873,
+      "source": "https://pypi.org/simple/pillow/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "primePy",
+      "version": "1.3",
+      "filename": "primePy-1.3-py3-none-any.whl",
+      "sha256": "5ed443718765be9bf7e2ff4c56cdff71b42140a15b39d054f9d99f0009e2317a",
+      "sizeBytes": 4040,
+      "source": "https://pypi.org/simple/primepy/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "propcache",
+      "version": "0.5.2",
+      "filename": "propcache-0.5.2-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "c6844ba6364fb12f403928a82cfd295ab103a2b315c77c747b2dbe4a41894ea7",
+      "sizeBytes": 52754,
+      "source": "https://pypi.org/simple/propcache/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "protobuf",
+      "version": "6.33.6",
+      "filename": "protobuf-6.33.6-cp39-abi3-macosx_10_9_universal2.whl",
+      "sha256": "9720e6961b251bde64edfdab7d500725a2af5280f3f4c87e57c0208376aa8c3a",
+      "sizeBytes": 427737,
+      "source": "https://pypi.org/simple/protobuf/",
+      "wheelTags": [
+        "cp39-abi3-macosx_10_9_universal2"
+      ],
+      "thinInstalledMachOToArm64": true
+    },
+    {
+      "name": "pyannote-audio",
+      "version": "4.0.4",
+      "filename": "pyannote_audio-4.0.4-py3-none-any.whl",
+      "sha256": "f9f8f597a938789684dd3efa22b427ebb1755d172dab2049ff322bfae9cd528a",
+      "sizeBytes": 893682,
+      "source": "https://pypi.org/simple/pyannote-audio/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyannote-core",
+      "version": "6.0.1",
+      "filename": "pyannote_core-6.0.1-py3-none-any.whl",
+      "sha256": "924550d6ecf6b05ad13bf3f66f59c29fc740cf1c62a6fca860ac2e66908203e5",
+      "sizeBytes": 57505,
+      "source": "https://pypi.org/simple/pyannote-core/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyannote-database",
+      "version": "6.1.1",
+      "filename": "pyannote_database-6.1.1-py3-none-any.whl",
+      "sha256": "36460c70ce9f50ff25c9ea365bc83ad625bb6b2494deccf6bd3fc750686ae684",
+      "sizeBytes": 53735,
+      "source": "https://pypi.org/simple/pyannote-database/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyannote-metrics",
+      "version": "4.1",
+      "filename": "pyannote_metrics-4.1-py3-none-any.whl",
+      "sha256": "34a54b7671f61709c1865d0484843e5b46ea3c4e4e5260ab065e5b3156c733d3",
+      "sizeBytes": 52116,
+      "source": "https://pypi.org/simple/pyannote-metrics/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyannote-pipeline",
+      "version": "4.0.0",
+      "filename": "pyannote_pipeline-4.0.0-py3-none-any.whl",
+      "sha256": "6b0bfc19e684d89cc1608bb39448e15ff1231d4a87e99fc7e812e7891b8cd555",
+      "sizeBytes": 22215,
+      "source": "https://pypi.org/simple/pyannote-pipeline/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyannoteai-sdk",
+      "version": "0.4.0",
+      "filename": "pyannoteai_sdk-0.4.0-py3-none-any.whl",
+      "sha256": "36a0175978e0427f27843d690eb4d1e8ec839009ea540516d6dfcdce749cd883",
+      "sizeBytes": 8886,
+      "source": "https://pypi.org/simple/pyannoteai-sdk/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.4",
+      "filename": "pydantic-2.13.4-py3-none-any.whl",
+      "sha256": "45a282cde31d808236fd7ea9d919b128653c8b38b393d1c4ab335c62924d9aba",
+      "sizeBytes": 472262,
+      "source": "https://pypi.org/simple/pydantic/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.46.4",
+      "filename": "pydantic_core-2.46.4-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "e0d65b8c354be7fb5f720c3caa8bc940bc2d20ce749c8e06135f07f8ed95dd7c",
+      "sizeBytes": 1948255,
+      "source": "https://pypi.org/simple/pydantic-core/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "Pygments",
+      "version": "2.20.0",
+      "filename": "pygments-2.20.0-py3-none-any.whl",
+      "sha256": "81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176",
+      "sizeBytes": 1231151,
+      "source": "https://pypi.org/simple/pygments/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.2",
+      "filename": "pyparsing-3.3.2-py3-none-any.whl",
+      "sha256": "850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d",
+      "sizeBytes": 122781,
+      "source": "https://pypi.org/simple/pyparsing/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "filename": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427",
+      "sizeBytes": 229892,
+      "source": "https://pypi.org/simple/python-dateutil/",
+      "wheelTags": [
+        "py2-none-any",
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pytorch-lightning",
+      "version": "2.6.5",
+      "filename": "pytorch_lightning-2.6.5-py3-none-any.whl",
+      "sha256": "62d9c8549b2278fedc3364f0a5607a56c6063d18635008f8cf3fae8d802b0d76",
+      "sizeBytes": 852407,
+      "source": "https://pypi.org/simple/pytorch-lightning/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "pytorch-metric-learning",
+      "version": "2.9.0",
+      "filename": "pytorch_metric_learning-2.9.0-py3-none-any.whl",
+      "sha256": "d51646006dc87168f00cf954785db133a4c5aac81253877248737aa42ef6432a",
+      "sizeBytes": 127801,
+      "source": "https://pypi.org/simple/pytorch-metric-learning/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "filename": "pyyaml-6.0.3-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "652cb6edd41e718550aad172851962662ff2681490a8a711af6a4d288dd96824",
+      "sizeBytes": 175577,
+      "source": "https://pypi.org/simple/pyyaml/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "regex",
+      "version": "2026.5.9",
+      "filename": "regex-2026.5.9-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "ef31cbfe458e21c6122ba8150ff060e0c7789ed0d26eb423f25472584920b555",
+      "sizeBytes": 289212,
+      "source": "https://pypi.org/simple/regex/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "sizeBytes": 73075,
+      "source": "https://pypi.org/simple/requests/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "filename": "rich-15.0.0-py3-none-any.whl",
+      "sha256": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb",
+      "sizeBytes": 310654,
+      "source": "https://pypi.org/simple/rich/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "safetensors",
+      "version": "0.8.0",
+      "filename": "safetensors-0.8.0-cp310-abi3-macosx_11_0_arm64.whl",
+      "sha256": "c80201d22cbf405b80647a60ada77bba06c8fba2da2743ba1e89cdcc39a81f25",
+      "sizeBytes": 484562,
+      "source": "https://pypi.org/simple/safetensors/",
+      "wheelTags": [
+        "cp310-abi3-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.9.0",
+      "filename": "scikit_learn-1.9.0-cp311-cp311-macosx_12_0_arm64.whl",
+      "sha256": "f401448645a3e7bc115aa3c094097865155b34bff1cba8101857d9104e99074c",
+      "sizeBytes": 8256782,
+      "source": "https://pypi.org/simple/scikit-learn/",
+      "wheelTags": [
+        "cp311-cp311-macosx_12_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "filename": "scipy-1.17.1-cp311-cp311-macosx_14_0_arm64.whl",
+      "sha256": "a3472cfbca0a54177d0faa68f697d8ba4c80bbdc19908c3465556d9f7efce9ee",
+      "sizeBytes": 20334032,
+      "source": "https://pypi.org/simple/scipy/",
+      "wheelTags": [
+        "cp311-cp311-macosx_14_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "filename": "shellingham-1.5.4-py2.py3-none-any.whl",
+      "sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686",
+      "sizeBytes": 9755,
+      "source": "https://pypi.org/simple/shellingham/",
+      "wheelTags": [
+        "py2-none-any",
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "filename": "six-1.17.0-py2.py3-none-any.whl",
+      "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+      "sizeBytes": 11050,
+      "source": "https://pypi.org/simple/six/",
+      "wheelTags": [
+        "py2-none-any",
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "sortedcontainers",
+      "version": "2.4.0",
+      "filename": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+      "sha256": "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+      "sizeBytes": 29575,
+      "source": "https://pypi.org/simple/sortedcontainers/",
+      "wheelTags": [
+        "py2-none-any",
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "sphn",
+      "version": "0.2.1",
+      "filename": "sphn-0.2.1-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "a2238bcb66c21322ddc4a9308d7fbd4903175951ee4357cad8056c5e371e447f",
+      "sizeBytes": 1755729,
+      "source": "https://pypi.org/simple/sphn/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.0.51",
+      "filename": "sqlalchemy-2.0.51-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "1aa10c0daee6705294d181daadaa793221e1a59ed55000a3fab1d42b088ce4ba",
+      "sizeBytes": 2161838,
+      "source": "https://pypi.org/simple/sqlalchemy/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "filename": "sympy-1.14.0-py3-none-any.whl",
+      "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5",
+      "sizeBytes": 6299353,
+      "source": "https://pypi.org/simple/sympy/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "filename": "threadpoolctl-3.6.0-py3-none-any.whl",
+      "sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb",
+      "sizeBytes": 18638,
+      "source": "https://pypi.org/simple/threadpoolctl/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "tokenizers",
+      "version": "0.22.2",
+      "filename": "tokenizers-0.22.2-cp39-abi3-macosx_11_0_arm64.whl",
+      "sha256": "1e418a55456beedca4621dbab65a318981467a2b188e982a23e117f115ce5001",
+      "sizeBytes": 2981472,
+      "source": "https://pypi.org/simple/tokenizers/",
+      "wheelTags": [
+        "cp39-abi3-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torch",
+      "version": "2.8.0",
+      "filename": "torch-2.8.0-cp311-none-macosx_11_0_arm64.whl",
+      "sha256": "5ae0524688fb6707c57a530c2325e13bb0090b745ba7b4a2cd6a3ce262572916",
+      "sizeBytes": 73621174,
+      "source": "https://pypi.org/simple/torch/",
+      "wheelTags": [
+        "cp311-none-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torch-audiomentations",
+      "version": "0.12.0",
+      "filename": "torch_audiomentations-0.12.0-py3-none-any.whl",
+      "sha256": "1b80b91d2016ccf83979622cac8f702072a79b7dcc4c2bee40f00b26433a786b",
+      "sizeBytes": 48506,
+      "source": "https://pypi.org/simple/torch-audiomentations/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torch_pitch_shift",
+      "version": "1.2.5",
+      "filename": "torch_pitch_shift-1.2.5-py3-none-any.whl",
+      "sha256": "6f8500cbc13f1c98b11cde1805ce5084f82cdd195c285f34287541f168a7c6a7",
+      "sizeBytes": 5005,
+      "source": "https://pypi.org/simple/torch-pitch-shift/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torchaudio",
+      "version": "2.8.0",
+      "filename": "torchaudio-2.8.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "c9276857d241c6de257af765c0f51fc011af38cb725401495121b280913007cf",
+      "sizeBytes": 1859094,
+      "source": "https://pypi.org/simple/torchaudio/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torchcodec",
+      "version": "0.7.0",
+      "filename": "torchcodec-0.7.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "967a14b31e04721901ddbf965f9e9f733f328c5e98a51e22f414e25ac32e20ba",
+      "sizeBytes": 3388626,
+      "source": "https://pypi.org/simple/torchcodec/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torchmetrics",
+      "version": "1.9.0",
+      "filename": "torchmetrics-1.9.0-py3-none-any.whl",
+      "sha256": "bfdcbff3dd1d96b3374bb2496eb39f23c4b28b8a845b6a18c313688e0d2d9ca1",
+      "sizeBytes": 983384,
+      "source": "https://pypi.org/simple/torchmetrics/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "torchvision",
+      "version": "0.23.0",
+      "filename": "torchvision-0.23.0-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "49aa20e21f0c2bd458c71d7b449776cbd5f16693dd5807195a820612b8a229b7",
+      "sizeBytes": 1856884,
+      "source": "https://pypi.org/simple/torchvision/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "tqdm",
+      "version": "4.68.3",
+      "filename": "tqdm-4.68.3-py3-none-any.whl",
+      "sha256": "39832cc2def2789a6f29df83f172db7416cea70052c0907a57801c5f2fdccb03",
+      "sizeBytes": 78337,
+      "source": "https://pypi.org/simple/tqdm/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "transformers",
+      "version": "4.57.6",
+      "filename": "transformers-4.57.6-py3-none-any.whl",
+      "sha256": "4c9e9de11333ddfe5114bc872c9f370509198acf0b87a832a0ab9458e2bd0550",
+      "sizeBytes": 11993498,
+      "source": "https://pypi.org/simple/transformers/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "typer",
+      "version": "0.26.8",
+      "filename": "typer-0.26.8-py3-none-any.whl",
+      "sha256": "3512ca79ac5c11113414b36e80281b872884477722440691c89d1112e321a49c",
+      "sizeBytes": 122564,
+      "source": "https://pypi.org/simple/typer/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "sizeBytes": 45571,
+      "source": "https://pypi.org/simple/typing-extensions/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.2",
+      "filename": "typing_inspection-0.4.2-py3-none-any.whl",
+      "sha256": "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7",
+      "sizeBytes": 14611,
+      "source": "https://pypi.org/simple/typing-inspection/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "filename": "urllib3-2.7.0-py3-none-any.whl",
+      "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897",
+      "sizeBytes": 131087,
+      "source": "https://pypi.org/simple/urllib3/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "whisperx",
+      "version": "3.8.6",
+      "filename": "whisperx-3.8.6-py3-none-any.whl",
+      "sha256": "cb6d4fcd3fb6c42305cb8b222a33a0b78f6b657e9db3b714345fe43dc0a69c1f",
+      "sizeBytes": 16486941,
+      "source": "https://pypi.org/simple/whisperx/",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "xingyu-lyrics-aligner",
+      "version": "0.7.0",
+      "filename": "xingyu_lyrics_aligner-0.7.0-py3-none-any.whl",
+      "sha256": "15b0ba6e7ee9dc20f950c144b991837eceb4152463c456d03ad2bcbf0da3369e",
+      "sizeBytes": 90902,
+      "source": "local-project-source",
+      "wheelTags": [
+        "py3-none-any"
+      ],
+      "thinInstalledMachOToArm64": false
+    },
+    {
+      "name": "yarl",
+      "version": "1.24.2",
+      "filename": "yarl-1.24.2-cp311-cp311-macosx_11_0_arm64.whl",
+      "sha256": "8d027d56f1035e339d1001ac33eceab5b2ec8e42e449787bb75e289fb9a5cd1d",
+      "sizeBytes": 91343,
+      "source": "https://pypi.org/simple/yarl/",
+      "wheelTags": [
+        "cp311-cp311-macosx_11_0_arm64"
+      ],
+      "thinInstalledMachOToArm64": false
+    }
+  ]
+}
