@@ -357,6 +357,7 @@ def test_desktop_integration_uses_shared_demucs_file_discovery(
             return "", ""
 
     monkeypatch.setattr("xingyu_lyrics_aligner.worker.align_lyrics", fake_align())
+    monkeypatch.setattr(audio_separation.importlib.util, "find_spec", lambda name: object())
     monkeypatch.setattr(audio_separation.subprocess, "Popen", DemucsProcess)
     run_worker(jobs_dir=jobs, music_dir=music, once=True)
 

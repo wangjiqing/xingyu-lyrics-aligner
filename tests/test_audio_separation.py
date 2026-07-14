@@ -49,6 +49,22 @@ def fake_demucs_process(*, missing: str | None = None, commands: list[list[str]]
     return Process
 
 
+@pytest.fixture(autouse=True)
+def installed_demucs(monkeypatch: MonkeyPatch) -> None:
+    """Keep subprocess tests independent of the optional package installed on the host."""
+
+    monkeypatch.setattr(audio_separation.importlib.util, "find_spec", lambda name: object())
+
+
+def test_separation_reports_missing_optional_demucs(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(audio_separation.importlib.util, "find_spec", lambda name: None)
+
+    with pytest.raises(AudioSeparationError, match="Demucs is not installed"):
+        separate_vocals_and_accompaniment(tmp_path / "song.wav", tmp_path / "work")
+
+
 def test_separation_finds_both_tracks_with_unicode_and_spaces(
     monkeypatch: MonkeyPatch, tmp_path: Path
 ) -> None:

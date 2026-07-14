@@ -299,6 +299,7 @@ def test_demucs_torchcodec_error_is_actionable(monkeypatch: MonkeyPatch, tmp_pat
         def communicate(self) -> tuple[str, str]:
             return "", "ImportError: TorchCodec is required for save_with_torchcodec."
 
+    monkeypatch.setattr(audio_separation.importlib.util, "find_spec", lambda name: object())
     monkeypatch.setattr(audio_separation.subprocess, "Popen", FailedProcess)
 
     try:
