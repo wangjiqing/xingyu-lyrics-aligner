@@ -4,19 +4,30 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import shutil
+import signal
 import threading
 import time
 import traceback
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from xingyu_lyrics_aligner import __version__
+from xingyu_lyrics_aligner.alignment.pipeline import AlignmentPipelineStage
 from xingyu_lyrics_aligner.api import AlignLyricsOptions, align_lyrics
+from xingyu_lyrics_aligner.audio_separation import (
+    AudioSeparationError,
+    export_separated_audio,
+    separate_vocals_and_accompaniment,
+    terminate_active_separation,
+)
 from xingyu_lyrics_aligner.candidate_lyrics.config import (
     DraftConfigError,
     DraftExtractionConfig,
@@ -29,6 +40,7 @@ from xingyu_lyrics_aligner.candidate_lyrics.transcription import (
 )
 from xingyu_lyrics_aligner.commands.align import align_error_code, align_json_result_payload
 from xingyu_lyrics_aligner.device import DeviceStrategy
+from xingyu_lyrics_aligner.schemas.artifacts import ArtifactKind, ResultArtifact, ResultArtifacts
 
 
 class WorkerStatus(StrEnum):
@@ -40,13 +52,15 @@ class WorkerStatus(StrEnum):
     NEEDS_REVIEW = "NEEDS_REVIEW"
     FAILED = "FAILED"
     ABANDONED = "ABANDONED"
+    CANCELLED = "CANCELLED"
 
 
 class WorkerTaskType(StrEnum):
-    """Worker task types supported by schemaVersion 2."""
+    """Stable Worker task types across supported request schema versions."""
 
     LYRICS_ALIGNMENT = "LYRICS_ALIGNMENT"
     LYRIC_DRAFT_EXTRACTION = "LYRIC_DRAFT_EXTRACTION"
+    DESKTOP_LYRIC_PROCESSING = "DESKTOP_LYRIC_PROCESSING"
 
 
 class WorkerStage(StrEnum):
@@ -79,6 +93,7 @@ class WorkerEventType(StrEnum):
     TASK_NEEDS_REVIEW = "TASK_NEEDS_REVIEW"
     TASK_FAILED = "TASK_FAILED"
     TASK_ABANDONED = "TASK_ABANDONED"
+    TASK_CANCELLED = "TASK_CANCELLED"
 
 
 class WorkerRequestV1(BaseModel):
@@ -199,12 +214,49 @@ class WorkerDraftExtractionRequestV3(BaseModel):
     created_at: str | None = Field(default=None, alias="createdAt")
 
 
+class WorkerDesktopExportsV3(BaseModel):
+    """Selected formal outputs for a desktop trusted-lyrics task."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lrc: bool = True
+    swlrc: bool = True
+    vocals: bool = False
+    accompaniment: bool = False
+    alignment_json: bool = Field(default=False, alias="alignmentJson")
+    report_json: bool = Field(default=False, alias="reportJson")
+
+    @model_validator(mode="after")
+    def require_lyrics_export(self) -> WorkerDesktopExportsV3:
+        if not self.lrc and not self.swlrc:
+            raise ValueError("At least one of exports.lrc or exports.swlrc must be true.")
+        return self
+
+
+class WorkerDesktopLyricsRequestV3(BaseModel):
+    """schemaVersion 3 one-shot desktop trusted-lyrics processing request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[3] = Field(alias="schemaVersion")
+    job_id: str = Field(alias="jobId", min_length=1)
+    task_type: Literal[WorkerTaskType.DESKTOP_LYRIC_PROCESSING] = Field(alias="taskType")
+    audio_path: Path = Field(alias="audioPath")
+    trusted_lyrics_path: Path = Field(alias="trustedLyricsPath")
+    output_dir: Path = Field(alias="outputDir")
+    language: str = "zh"
+    device: DeviceStrategy = DeviceStrategy.CPU
+    exports: WorkerDesktopExportsV3 = Field(default_factory=WorkerDesktopExportsV3)
+    created_at: str | None = Field(default=None, alias="createdAt")
+
+
 WorkerRequest = (
     WorkerRequestV1
     | WorkerAlignmentRequestV2
     | WorkerAlignmentRequestV3
     | WorkerDraftExtractionRequestV2
     | WorkerDraftExtractionRequestV3
+    | WorkerDesktopLyricsRequestV3
 )
 
 
@@ -225,6 +277,10 @@ class WorkerError(Exception):
         self.message = message
 
 
+class WorkerCancelled(BaseException):
+    """Internal control flow for a requested task cancellation."""
+
+
 def run_worker(
     *,
     jobs_dir: Path,
@@ -242,48 +298,92 @@ def run_worker(
     music_root = music_dir.resolve(strict=False)
     jobs_root.mkdir(parents=True, exist_ok=True)
 
-    while True:
-        mark_abandoned_jobs(jobs_root, timeout_seconds=running_timeout_seconds)
-        claimed = claim_next_job(jobs_root)
-        if claimed is None:
+    active_job: Path | None = None
+
+    def handle_termination(_signum: int, _frame: object) -> None:
+        if active_job is not None:
+            (active_job / "CANCEL_REQUESTED").touch(exist_ok=True)
+        terminate_active_separation()
+        raise WorkerCancelled
+
+    previous_handlers = {
+        value: signal.signal(value, handle_termination) for value in (signal.SIGINT, signal.SIGTERM)
+    }
+    try:
+        while True:
+            mark_abandoned_jobs(jobs_root, timeout_seconds=running_timeout_seconds)
+            claimed = claim_next_job(jobs_root)
+            if claimed is None:
+                if once:
+                    return
+                time.sleep(poll_interval_seconds)
+                continue
+            active_job = claimed.job_dir
+            try:
+                execute_job(
+                    claimed,
+                    jobs_root=jobs_root,
+                    music_root=music_root,
+                    device_override=device,
+                    min_coverage=min_coverage,
+                    estimated_token_review_threshold=estimated_token_review_threshold,
+                )
+            finally:
+                active_job = None
             if once:
                 return
-            time.sleep(poll_interval_seconds)
-            continue
-        execute_job(
-            claimed,
-            jobs_root=jobs_root,
-            music_root=music_root,
-            device_override=device,
-            min_coverage=min_coverage,
-            estimated_token_review_threshold=estimated_token_review_threshold,
-        )
-        if once:
-            return
+    except WorkerCancelled:
+        return
+    finally:
+        for value, handler in previous_handlers.items():
+            signal.signal(value, handler)
 
 
 def claim_next_job(jobs_dir: Path) -> ClaimedJob | None:
     """Claim the first READY job by exclusively creating RUNNING."""
 
-    for job_dir in sorted(path for path in jobs_dir.iterdir() if path.is_dir()):
+    jobs_root = jobs_dir.resolve(strict=True)
+    for job_dir in sorted(jobs_dir.iterdir()):
+        if not safe_job_directory(job_dir, jobs_root):
+            continue
         ready = job_dir / "READY"
-        running = job_dir / "RUNNING"
-        if not ready.exists():
+        request_path = job_dir / "request.json"
+        if not safe_claim_file(ready, job_dir) or not safe_claim_file(request_path, job_dir):
             continue
         fd: int | None = None
+        directory_fd: int | None = None
         try:
-            fd = os.open(running, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            if not safe_job_directory(job_dir, jobs_root):
+                continue
+            directory_fd = os.open(
+                job_dir, os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0)
+            )
+            fd = os.open(
+                "RUNNING", os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644, dir_fd=directory_fd
+            )
             os.write(fd, f"claimedAt={utc_now()}\n".encode())
-        except FileExistsError:
+        except (FileExistsError, NotADirectoryError, OSError):
+            if directory_fd is not None:
+                os.close(directory_fd)
             continue
         finally:
             if fd is not None:
                 os.close(fd)
-        try:
-            ready.unlink()
-        except FileNotFoundError:
-            running.unlink(missing_ok=True)
+        if directory_fd is None:
             continue
+        try:
+            current = job_dir.stat(follow_symlinks=False)
+            opened = os.fstat(directory_fd)
+            if (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino):
+                os.unlink("RUNNING", dir_fd=directory_fd)
+                continue
+            os.unlink("READY", dir_fd=directory_fd)
+        except FileNotFoundError:
+            with suppress(FileNotFoundError):
+                os.unlink("RUNNING", dir_fd=directory_fd)
+            continue
+        finally:
+            os.close(directory_fd)
         try:
             request = load_request(job_dir)
         except WorkerError as exc:
@@ -299,6 +399,28 @@ def claim_next_job(jobs_dir: Path) -> ClaimedJob | None:
         write_running_status(job_dir, request, stage=WorkerStage.VALIDATING_REQUEST)
         return ClaimedJob(job_dir=job_dir, request=request)
     return None
+
+
+def safe_job_directory(job_dir: Path, jobs_root: Path) -> bool:
+    """Reject symlinked/replaced job entries before writing any claim files."""
+
+    try:
+        if job_dir.is_symlink() or not job_dir.is_dir():
+            return False
+        return job_dir.resolve(strict=True).parent == jobs_root
+    except OSError:
+        return False
+
+
+def safe_claim_file(path: Path, job_dir: Path) -> bool:
+    """Require READY/request.json to be regular, non-symlink files in the job."""
+
+    try:
+        if path.is_symlink() or not path.is_file():
+            return False
+        return path.resolve(strict=True).parent == job_dir.resolve(strict=True)
+    except OSError:
+        return False
 
 
 def execute_job(
@@ -318,6 +440,16 @@ def execute_job(
             jobs_root=jobs_root,
             music_root=music_root,
             device_override=device_override,
+        )
+        return
+    if claimed.request.task_type == WorkerTaskType.DESKTOP_LYRIC_PROCESSING:
+        execute_desktop_lyrics_job(
+            claimed,
+            jobs_root=jobs_root,
+            music_root=music_root,
+            device_override=device_override,
+            min_coverage=min_coverage,
+            estimated_token_review_threshold=estimated_token_review_threshold,
         )
         return
     execute_alignment_job(
@@ -403,13 +535,12 @@ def execute_alignment_job(
             attempt_stderr_path=attempt_stderr_path,
             device_override=device_override,
         )
-        write_terminal_marker(job_dir, status)
         event_type = (
             WorkerEventType.TASK_NEEDS_REVIEW
             if status == WorkerStatus.NEEDS_REVIEW
             else WorkerEventType.TASK_COMPLETED
         )
-        write_status(
+        commit_terminal_status(
             job_dir,
             build_status_payload(
                 job_dir,
@@ -422,10 +553,8 @@ def execute_alignment_job(
                 warnings=result_warnings if isinstance(result_warnings, list) else [],
                 result=payload,
             ),
-        )
-        append_event(
-            job_dir,
-            event_type,
+            status=status,
+            event_type=event_type,
             stage=WorkerStage.FINALIZING,
             message=f"Alignment job finished with state {status}.",
             details={"state": status},
@@ -434,9 +563,7 @@ def execute_alignment_job(
     except Exception as exc:
         write_attempt_stderr(attempt_stderr_path, stderr_path, traceback.format_exc())
         code = exc.code if isinstance(exc, WorkerError) else align_error_code(exc)
-        message = (
-            exc.message if isinstance(exc, WorkerError) else alignment_failure_message(exc)
-        )
+        message = exc.message if isinstance(exc, WorkerError) else alignment_failure_message(exc)
         write_failure_status(
             job_dir,
             code,
@@ -445,6 +572,291 @@ def execute_alignment_job(
             attempt_id=attempt_id,
             attempt_stderr_path=attempt_stderr_path,
         )
+
+
+def execute_desktop_lyrics_job(
+    claimed: ClaimedJob,
+    *,
+    jobs_root: Path,
+    music_root: Path,
+    device_override: DeviceStrategy,
+    min_coverage: float,
+    estimated_token_review_threshold: int,
+) -> None:
+    """Run trusted-lyrics alignment and optional two-track export for Desktop."""
+
+    job_dir = claimed.job_dir
+    request = claimed.request
+    if not isinstance(request, WorkerDesktopLyricsRequestV3):
+        raise WorkerError("TASK_TYPE_MISMATCH", "Expected a desktop lyrics request.")
+    attempt_id = new_attempt_id()
+    attempt_stderr_path = job_dir / "attempts" / f"{attempt_id}.stderr.log"
+    stderr_path = job_dir / "stderr.log"
+    intermediate_dir = job_dir / "intermediate"
+    attempt_stderr_path.parent.mkdir(parents=True, exist_ok=True)
+    heartbeat = HeartbeatThread(
+        job_dir=job_dir,
+        request=request,
+        stage=WorkerStage.PREPARING_AUDIO,
+        attempt_id=attempt_id,
+        attempt_stderr_path=attempt_stderr_path,
+        device_override=device_override,
+    )
+
+    def start_stage(stage: WorkerStage) -> None:
+        raise_if_cancel_requested(job_dir)
+        heartbeat.set_stage(stage)
+        stage_started(
+            job_dir,
+            request,
+            stage,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+            device_override=device_override,
+        )
+
+    def alignment_stage_observer(stage: AlignmentPipelineStage) -> None:
+        if stage == AlignmentPipelineStage.PREPARING_AUDIO:
+            return
+        start_stage(WorkerStage(stage.value))
+
+    try:
+        raise_if_cancel_requested(job_dir)
+        # A previous process may have died before its finally/except cleanup.
+        # No Desktop intermediate is part of the formal result contract.
+        shutil.rmtree(intermediate_dir, ignore_errors=True)
+        validate_request_paths(request, jobs_root=jobs_root, music_root=music_root)
+        start_stage(WorkerStage.PREPARING_AUDIO)
+        separated = None
+        if request.exports.vocals or request.exports.accompaniment:
+            start_stage(WorkerStage.SEPARATING_VOCALS)
+            with heartbeat:
+                separated = separate_vocals_and_accompaniment(
+                    request.audio_path,
+                    intermediate_dir,
+                )
+        raise_if_cancel_requested(job_dir)
+        if not heartbeat.is_running:
+            heartbeat = HeartbeatThread(
+                job_dir=job_dir,
+                request=request,
+                stage=WorkerStage.PREPARING_AUDIO,
+                attempt_id=attempt_id,
+                attempt_stderr_path=attempt_stderr_path,
+                device_override=device_override,
+            )
+        with heartbeat:
+            result = align_lyrics(
+                audio_path=request.audio_path,
+                lyrics_path=request.trusted_lyrics_path,
+                output_dir=request.output_dir,
+                language=request.language,
+                device=device_override,
+                options=AlignLyricsOptions(
+                    overwrite=True,
+                    stage_observer=alignment_stage_observer,
+                ),
+            )
+        raise_if_cancel_requested(job_dir)
+        exported_files = select_desktop_alignment_files(request, result.files)
+        if separated is not None:
+            exported_files.update(
+                export_separated_audio(
+                    separated,
+                    request.output_dir,
+                    export_vocals=request.exports.vocals,
+                    export_accompaniment=request.exports.accompaniment,
+                )
+            )
+        remove_unselected_desktop_outputs(request, result.files, request.output_dir)
+        artifacts = build_desktop_artifacts(job_dir, exported_files)
+        # Formal export is the commit boundary. Cancellation observed after this
+        # point must not turn a complete, verified result into an uncontracted
+        # partial cancellation; terminal success/review therefore wins.
+        stage_started(
+            job_dir,
+            request,
+            WorkerStage.QUALITY_CHECKING,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+            device_override=device_override,
+        )
+        payload = align_json_result_payload(result)
+        payload["files"] = {key: str(path) for key, path in exported_files.items()}
+        payload.update(artifacts.model_dump(mode="json", by_alias=True))
+        result_warnings = payload.get("warnings")
+        warnings = result_warnings if isinstance(result_warnings, list) else []
+        for warning in warnings:
+            append_event(
+                job_dir,
+                WorkerEventType.WARNING,
+                level="WARNING",
+                stage=WorkerStage.QUALITY_CHECKING,
+                message=str(warning),
+                details={"source": "alignment_result"},
+            )
+        status = classify_result(
+            payload,
+            min_coverage=min_coverage,
+            estimated_token_review_threshold=estimated_token_review_threshold,
+        )
+        shutil.rmtree(intermediate_dir, ignore_errors=True)
+        write_attempt_stderr(attempt_stderr_path, stderr_path, "")
+        stage_started(
+            job_dir,
+            request,
+            WorkerStage.FINALIZING,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+            device_override=device_override,
+        )
+        event_type = (
+            WorkerEventType.TASK_NEEDS_REVIEW
+            if status == WorkerStatus.NEEDS_REVIEW
+            else WorkerEventType.TASK_COMPLETED
+        )
+        commit_terminal_status(
+            job_dir,
+            build_status_payload(
+                job_dir,
+                request=request,
+                state=status,
+                stage=WorkerStage.FINALIZING,
+                attempt_id=attempt_id,
+                attempt_stderr_path=attempt_stderr_path,
+                device_override=device_override,
+                warnings=warnings,
+                result=payload,
+            ),
+            status=status,
+            event_type=event_type,
+            stage=WorkerStage.FINALIZING,
+            message=f"Desktop lyrics job finished with state {status}.",
+            details={"state": status},
+            flush=True,
+        )
+    except WorkerCancelled:
+        shutil.rmtree(intermediate_dir, ignore_errors=True)
+        write_attempt_stderr(attempt_stderr_path, stderr_path, "")
+        write_cancelled_status(
+            job_dir,
+            request=request,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+            device_override=device_override,
+        )
+    except Exception as exc:
+        shutil.rmtree(intermediate_dir, ignore_errors=True)
+        write_attempt_stderr(attempt_stderr_path, stderr_path, traceback.format_exc())
+        if isinstance(exc, WorkerError):
+            code = exc.code
+            message = exc.message
+        else:
+            code = (
+                "VOCAL_SEPARATION_FAILED"
+                if isinstance(exc, AudioSeparationError)
+                else align_error_code(exc)
+            )
+            message = str(exc) or "Desktop lyrics processing failed."
+        write_failure_status(
+            job_dir,
+            code,
+            message,
+            request=request,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+        )
+
+
+def select_desktop_alignment_files(
+    request: WorkerDesktopLyricsRequestV3,
+    files: dict[str, Path],
+) -> dict[str, Path]:
+    selected: dict[str, Path] = {}
+    flags = {
+        "lrc": request.exports.lrc,
+        "swlrc": request.exports.swlrc,
+        "alignment_json": request.exports.alignment_json,
+        "report": request.exports.report_json,
+    }
+    for key, enabled in flags.items():
+        if enabled:
+            path = files.get(key)
+            if path is None or not path.is_file():
+                raise WorkerError("OUTPUT_MISSING", f"Missing selected desktop output: {key}.")
+            selected[key] = path
+    return selected
+
+
+def remove_unselected_desktop_outputs(
+    request: WorkerDesktopLyricsRequestV3,
+    files: dict[str, Path],
+    output_root: Path,
+) -> None:
+    selected = {
+        "lrc": request.exports.lrc,
+        "swlrc": request.exports.swlrc,
+        "alignment_json": request.exports.alignment_json,
+        "report": request.exports.report_json,
+    }
+    try:
+        resolved_root = output_root.resolve(strict=True)
+    except (FileNotFoundError, OSError) as exc:
+        raise WorkerError("INVALID_OUTPUT_PATH", "Desktop output root is unavailable.") from exc
+    for key, path in files.items():
+        if key in selected and not selected[key]:
+            if path.is_symlink():
+                raise WorkerError(
+                    "PATH_OUTSIDE_ALLOWED_ROOT", "Refusing to remove a symlink output."
+                )
+            try:
+                resolved = path.resolve(strict=True)
+                resolved.relative_to(resolved_root)
+            except FileNotFoundError:
+                continue
+            except (ValueError, OSError) as exc:
+                raise WorkerError(
+                    "PATH_OUTSIDE_ALLOWED_ROOT",
+                    "Pipeline returned an output outside the desktop result directory.",
+                ) from exc
+            if resolved == resolved_root or not resolved.is_file():
+                raise WorkerError(
+                    "INVALID_OUTPUT_PATH", "Pipeline returned a non-file output path."
+                )
+            resolved.unlink()
+
+
+def build_desktop_artifacts(job_dir: Path, files: dict[str, Path]) -> ResultArtifacts:
+    """Build artifacts only after every selected file is verified inside the job."""
+
+    definitions = {
+        "lrc": ("lyrics.lrc", ArtifactKind.LRC, "text/plain"),
+        "swlrc": ("lyrics.swlrc", ArtifactKind.SWLRC, "text/plain"),
+        "alignment_json": ("alignment.json", ArtifactKind.ALIGNMENT_JSON, "application/json"),
+        "report": ("report.json", ArtifactKind.REPORT_JSON, "application/json"),
+        "vocals": ("audio.vocals", ArtifactKind.VOCALS, "audio/wav"),
+        "accompaniment": ("audio.accompaniment", ArtifactKind.ACCOMPANIMENT, "audio/wav"),
+    }
+    artifacts: list[ResultArtifact] = []
+    for key, path in files.items():
+        if not path.is_file():
+            raise WorkerError("OUTPUT_MISSING", f"Artifact does not exist: {path.name}.")
+        try:
+            relative = path.resolve(strict=True).relative_to(job_dir.resolve(strict=True))
+        except ValueError as exc:
+            raise WorkerError(
+                "PATH_OUTSIDE_ALLOWED_ROOT", "Artifact escaped the job directory."
+            ) from exc
+        artifact_id, kind, media_type = definitions[key]
+        artifacts.append(
+            ResultArtifact(
+                id=artifact_id,
+                kind=kind,
+                relativePath=relative.as_posix(),
+                mediaType=media_type,
+            )
+        )
+    return ResultArtifacts(artifacts=artifacts)
 
 
 def execute_draft_extraction_job(
@@ -524,10 +936,9 @@ def execute_draft_extraction_job(
         if not config.retain_intermediate:
             shutil.rmtree(intermediate_dir, ignore_errors=True)
         write_attempt_stderr(attempt_stderr_path, stderr_path, "")
-        write_terminal_marker(job_dir, WorkerStatus.SUCCEEDED)
         report_warnings = result.report.get("warnings", [])
         warning_count = len(report_warnings) if isinstance(report_warnings, list) else 0
-        write_status(
+        commit_terminal_status(
             job_dir,
             build_status_payload(
                 job_dir,
@@ -545,10 +956,8 @@ def execute_draft_extraction_job(
                     "report": result.report,
                 },
             ),
-        )
-        append_event(
-            job_dir,
-            WorkerEventType.TASK_COMPLETED,
+            status=WorkerStatus.SUCCEEDED,
+            event_type=WorkerEventType.TASK_COMPLETED,
             stage=WorkerStage.FINALIZING,
             message="Draft extraction job completed.",
             details={"warningCount": warning_count},
@@ -607,6 +1016,8 @@ def load_request(job_dir: Path) -> WorkerRequest:
             elif task_type == WorkerTaskType.LYRIC_DRAFT_EXTRACTION:
                 request = WorkerDraftExtractionRequestV3.model_validate(data)
                 resolve_worker_draft_config(request)
+            elif task_type == WorkerTaskType.DESKTOP_LYRIC_PROCESSING:
+                request = WorkerDesktopLyricsRequestV3.model_validate(data)
             elif task_type is None:
                 raise WorkerError("TASK_TYPE_MISSING", "schemaVersion 3 requires taskType.")
             else:
@@ -653,6 +1064,14 @@ def validate_request_paths(
                 job_dir,
                 field="sectionManifestPath",
             )
+    elif request.task_type == WorkerTaskType.DESKTOP_LYRIC_PROCESSING:
+        if not isinstance(request, WorkerDesktopLyricsRequestV3):
+            raise WorkerError("TASK_TYPE_MISMATCH", "Invalid desktop lyrics request model.")
+        require_existing_file_inside(
+            request.trusted_lyrics_path,
+            job_dir,
+            field="trustedLyricsPath",
+        )
 
 
 def resolve_worker_draft_config(
@@ -701,6 +1120,12 @@ def worker_requested_config(request: WorkerRequest) -> dict[str, object]:
                 "retainIntermediate": request.retain_intermediate,
             },
         )
+    if isinstance(request, WorkerDesktopLyricsRequestV3):
+        return {
+            "language": request.language,
+            "device": str(request.device),
+            "exports": request.exports.model_dump(mode="json", by_alias=True),
+        }
     return {
         "language": request.language,
         "device": str(request.device),
@@ -723,6 +1148,12 @@ def worker_resolved_config(
         payload["device"] = str(device_override or request.device)
         payload["language"] = request.language
         return payload
+    if isinstance(request, WorkerDesktopLyricsRequestV3):
+        return {
+            "language": request.language,
+            "device": str(device_override or request.device),
+            "exports": request.exports.model_dump(mode="json", by_alias=True),
+        }
     return {
         "language": request.language,
         "device": str(device_override or request.device),
@@ -875,8 +1306,7 @@ def mark_abandoned_jobs(jobs_dir: Path, *, timeout_seconds: int) -> None:
         job_id = job_dir.name
         identity = read_abandoned_job_identity(job_dir)
         message = f"Worker heartbeat exceeded {timeout_seconds} seconds."
-        write_terminal_marker(job_dir, WorkerStatus.ABANDONED)
-        write_status(
+        commit_terminal_status(
             job_dir,
             build_status_payload(
                 job_dir,
@@ -895,10 +1325,8 @@ def mark_abandoned_jobs(jobs_dir: Path, *, timeout_seconds: int) -> None:
                 "jobId": identity["jobId"] or job_id,
                 "taskType": identity["taskType"],
             },
-        )
-        append_event(
-            job_dir,
-            WorkerEventType.TASK_ABANDONED,
+            status=WorkerStatus.ABANDONED,
+            event_type=WorkerEventType.TASK_ABANDONED,
             level="WARNING",
             stage=WorkerStage.FINALIZING,
             message=message,
@@ -970,16 +1398,52 @@ def write_failure_status(
         attempt_stderr_path=attempt_stderr_path,
         error=error,
     )
-    write_status(job_dir, payload)
-    append_event(
+    commit_terminal_status(
         job_dir,
-        WorkerEventType.TASK_FAILED,
+        payload,
+        status=WorkerStatus.FAILED,
+        event_type=WorkerEventType.TASK_FAILED,
         level="ERROR",
         message=message,
         details={"code": code, "stderrPath": error["stderrPath"]},
         flush=True,
     )
-    write_terminal_marker(job_dir, WorkerStatus.FAILED)
+
+
+def raise_if_cancel_requested(job_dir: Path) -> None:
+    """Stop at a safe stage boundary when the caller requested cancellation."""
+
+    if (job_dir / "CANCEL_REQUESTED").exists():
+        raise WorkerCancelled
+
+
+def write_cancelled_status(
+    job_dir: Path,
+    *,
+    request: WorkerRequest,
+    attempt_id: str,
+    attempt_stderr_path: Path,
+    device_override: DeviceStrategy,
+) -> None:
+    """Write cancellation as its own terminal outcome, never as a failure."""
+
+    commit_terminal_status(
+        job_dir,
+        build_status_payload(
+            job_dir,
+            request=request,
+            state=WorkerStatus.CANCELLED,
+            stage=WorkerStage.FINALIZING,
+            attempt_id=attempt_id,
+            attempt_stderr_path=attempt_stderr_path,
+            device_override=device_override,
+        ),
+        status=WorkerStatus.CANCELLED,
+        event_type=WorkerEventType.TASK_CANCELLED,
+        stage=WorkerStage.FINALIZING,
+        message="Task cancellation completed.",
+        flush=True,
+    )
 
 
 def write_running_status(
@@ -1092,6 +1556,8 @@ def build_status_payload(
         "error": error,
         "result": result,
     }
+    if request is not None and request.schema_version == 3:
+        payload["runtime"] = runtime_metadata()
     if attempt_id is not None:
         payload["attempt"] = {
             "id": attempt_id,
@@ -1109,7 +1575,18 @@ TERMINAL_STATUSES = {
     WorkerStatus.NEEDS_REVIEW,
     WorkerStatus.FAILED,
     WorkerStatus.ABANDONED,
+    WorkerStatus.CANCELLED,
 }
+
+
+def runtime_metadata() -> dict[str, str]:
+    """Return truthful runtime identity for schema v3 status snapshots."""
+
+    return {
+        "workerVersion": __version__,
+        "pythonVersion": platform.python_version(),
+        "platform": f"{platform.system()}-{platform.machine()}",
+    }
 
 
 def indeterminate_progress() -> dict[str, object]:
@@ -1292,14 +1769,25 @@ class HeartbeatThread:
         self.interval_seconds = interval_seconds
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
+        self._started = False
 
     def __enter__(self) -> HeartbeatThread:
+        self._started = True
         self._thread.start()
         return self
 
     def __exit__(self, *_: object) -> None:
         self._stop.set()
         self._thread.join(timeout=1.0)
+
+    @property
+    def is_running(self) -> bool:
+        return self._started and self._thread.is_alive()
+
+    def set_stage(self, stage: WorkerStage) -> None:
+        """Keep heartbeat snapshots aligned with the latest observed stage."""
+
+        self.stage = stage
 
     def _run(self) -> None:
         while not self._stop.wait(self.interval_seconds):
@@ -1321,10 +1809,39 @@ def write_terminal_marker(job_dir: Path, status: WorkerStatus) -> None:
         WorkerStatus.NEEDS_REVIEW,
         WorkerStatus.FAILED,
         WorkerStatus.ABANDONED,
+        WorkerStatus.CANCELLED,
     }:
         return
+    terminal_statuses = {
+        WorkerStatus.SUCCEEDED,
+        WorkerStatus.NEEDS_REVIEW,
+        WorkerStatus.FAILED,
+        WorkerStatus.ABANDONED,
+        WorkerStatus.CANCELLED,
+    }
+    for other in terminal_statuses - {status}:
+        (job_dir / other.value).unlink(missing_ok=True)
     marker = job_dir / status.value
-    marker.write_text(f"{status.value} at {utc_now()}\n", encoding="utf-8")
+    temporary = job_dir / f".{status.value}.{os.getpid()}.{time.time_ns()}.tmp"
+    temporary.write_text(f"{status.value} at {utc_now()}\n", encoding="utf-8")
+    os.replace(temporary, marker)
+
+
+def commit_terminal_status(
+    job_dir: Path,
+    payload: dict[str, Any],
+    *,
+    status: WorkerStatus,
+    event_type: WorkerEventType,
+    **event: Any,
+) -> None:
+    """Commit status first; diagnostic/marker failures cannot reclassify the task."""
+
+    write_status(job_dir, payload)
+    with suppress(Exception):
+        append_event(job_dir, event_type, **event)
+    with suppress(Exception):
+        write_terminal_marker(job_dir, status)
 
 
 def write_status(job_dir: Path, payload: dict[str, Any]) -> None:

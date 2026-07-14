@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from xingyu_lyrics_aligner.alignment.audio import load_audio
@@ -58,6 +60,16 @@ class AlignRequest:
     lrc_offset_ms: int = 0
     overwrite: bool = False
     debug_output: bool = False
+    stage_observer: Callable[[AlignmentPipelineStage], None] | None = None
+
+
+class AlignmentPipelineStage(StrEnum):
+    """Truthful stage boundaries exposed by the alignment pipeline."""
+
+    PREPARING_AUDIO = "PREPARING_AUDIO"
+    LOADING_ALIGNMENT_MODEL = "LOADING_ALIGNMENT_MODEL"
+    ALIGNING = "ALIGNING"
+    EXPORTING_OUTPUTS = "EXPORTING_OUTPUTS"
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,7 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
     if input_character_count(line_specs) == 0:
         raise ValueError("Lyrics contain no alignable characters after normalization.")
 
+    observe_stage(request, AlignmentPipelineStage.PREPARING_AUDIO)
     loaded_audio = load_audio(request.audio)
     sections, section_warnings = resolve_sections(
         request.section_manifest,
@@ -106,6 +119,10 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
     all_lines: list[AlignmentLine] = []
     all_chars: list[CharacterTiming] = []
     warnings = list(aligner.device.warnings) + section_warnings + trusted_lyrics.warnings
+
+    observe_stage(request, AlignmentPipelineStage.LOADING_ALIGNMENT_MODEL)
+    aligner.load()
+    observe_stage(request, AlignmentPipelineStage.ALIGNING)
 
     for section in sections:
         section_line_specs = line_specs[section.line_start : section.line_end]
@@ -173,6 +190,7 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         preserved_header_lines=preserved_headers,
         presentation_hints=presentation_hints,
     )
+    observe_stage(request, AlignmentPipelineStage.EXPORTING_OUTPUTS)
     write_outputs(
         request.output_dir,
         alignment,
@@ -192,6 +210,13 @@ def run_alignment(request: AlignRequest) -> AlignRunResult:
         output_dir=request.output_dir,
         swlrc=swlrc_result.stats,
     )
+
+
+def observe_stage(request: AlignRequest, stage: AlignmentPipelineStage) -> None:
+    """Notify an optional orchestration observer at a real call boundary."""
+
+    if request.stage_observer is not None:
+        request.stage_observer(stage)
 
 
 def validate_request(request: AlignRequest) -> None:

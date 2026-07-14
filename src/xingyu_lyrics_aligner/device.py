@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import platform
 from enum import StrEnum
 from importlib import import_module
@@ -63,5 +64,13 @@ def detect_device_capabilities() -> DeviceCapabilities:
         is_apple_silicon=platform.system() == "Darwin" and machine in {"arm64", "aarch64"},
         cuda_available=cuda_available,
         mps_available=mps_available,
-        ffmpeg_path=which("ffmpeg"),
+        ffmpeg_path=explicit_or_path_executable("XINGYU_ALIGNER_FFMPEG", "ffmpeg"),
     )
+
+
+def explicit_or_path_executable(environment_name: str, command: str) -> str | None:
+    """Resolve a controlled executable override before consulting PATH."""
+    configured = os.environ.get(environment_name)
+    if configured:
+        return configured if os.path.isfile(configured) and os.access(configured, os.X_OK) else None
+    return which(command)

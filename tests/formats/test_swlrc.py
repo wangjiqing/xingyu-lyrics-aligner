@@ -117,13 +117,7 @@ def test_utf8_chinese_text_round_trips() -> None:
 
 
 def test_unknown_metadata_is_preserved() -> None:
-    text = (
-        "[swlrc:1]\n"
-        "[x-custom:kept]\n"
-        "[offset:0]\n"
-        "[tokenization:char]\n"
-        "[00:00.000,00:01.000]\n"
-    )
+    text = "[swlrc:1]\n[x-custom:kept]\n[offset:0]\n[tokenization:char]\n[00:00.000,00:01.000]\n"
 
     document = parse_swlrc(text)
 

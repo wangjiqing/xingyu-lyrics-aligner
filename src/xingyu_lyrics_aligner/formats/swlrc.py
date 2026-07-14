@@ -192,7 +192,9 @@ def serialize_swlrc(document: SwlrcDocument) -> str:
     for line in document.lines:
         output.append(f"[{_format_time(line.start_ms)},{_format_time(line.end_ms)}]")
         for token in line.tokens:
-            output.append(f"<{_format_time(token.start_ms)},{_format_time(token.end_ms)}>{token.text}")
+            output.append(
+                f"<{_format_time(token.start_ms)},{_format_time(token.end_ms)}>{token.text}"
+            )
     return "\n".join(output) + "\n"
 
 

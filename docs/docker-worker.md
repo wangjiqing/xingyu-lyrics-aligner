@@ -223,6 +223,11 @@ outside the current job directory.
 
 ## Status Contract
 
+The schema version 3 Desktop one-shot task, selected exports, cancellation, and
+versioned formal artifacts are documented in
+[Desktop Worker Protocol](desktop-worker-protocol.md). Existing alignment and
+draft task contracts below remain compatible.
+
 `status.json` is the only authoritative current-state snapshot. There is no
 separate `progress.json`. The file is always machine-readable JSON and is
 written to a temporary file in the same directory, flushed, fsynced, and

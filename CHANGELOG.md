@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased — 0.7.0
+
+### macOS Desktop MVP
+
+- Add a native SwiftUI App for Apple Silicon and macOS 14+, with audio drag/drop and file
+  selection, trusted TXT/LRC lyric import, LRC/SWLRC export, optional vocals/accompaniment
+  export, observable progress, cancellation, Finder export opening, and next-song reset.
+- Add managed model readiness and explicit installation. Model weights remain outside the App
+  under Application Support and are not bundled in the unsigned DMG.
+- Embed Python 3.11, FFmpeg/FFprobe 7.1.3, and an LGPL-only locally built PyAV wheel in an
+  arm64 Runtime. The candidate is ad-hoc signed only, is not notarized, and is not Gatekeeper
+  trusted.
+
+### Worker and protocol
+
+- Add schema v3 `DESKTOP_LYRIC_PROCESSING`, artifacts schema v1, optional formal vocals and
+  accompaniment exports, truthful alignment stages, and cooperative cancellation.
+- Add terminal Worker values `CANCELLED` and `TASK_CANCELLED`. Consumers with closed status/event
+  enums must accept these new schema v3 values before using Desktop cancellation.
+- Load the alignment model explicitly before the `ALIGNING` stage. Model loading is idempotent and
+  retains the existing cache-only behavior.
+- Treat formal artifact export as a commit boundary: cancellation before it yields `CANCELLED`;
+  cancellation after it does not override a verified success/review result, and export errors win
+  over a simultaneously arriving cancellation request.
+- Add versioned Runtime metadata, unique terminal marker commits, symlink/path containment, formal
+  `result/audio/vocals.wav` and `result/audio/accompaniment.wav`, process-group cleanup, and atomic
+  artifact export while preserving schema v1/v2/v3 and `result.files` compatibility.
+
+### Runtime and release safety
+
+- Add a hash-locked wheelhouse, strict per-distribution license inventory, complete Runtime file
+  inventory, GPL codec rejection, controlled FFmpeg cache manifests, and same-machine clean-build
+  comparison. This controls build inputs; it is not a claim of cross-machine bit-for-bit
+  reproducibility.
+- Add model content hashes, symlink and HTTPS downgrade defenses, crash-recoverable installation
+  transactions, bounded asynchronous process output, and non-blocking Swift file operations.
+- Add an unsigned DMG workflow, inside-out ad-hoc signing, explicit Gatekeeper limitations,
+  checksums, and release metadata. No Developer ID signature or notarization is claimed.
+
 ## 0.6.1
 
 - Bundled the NLTK `punkt_tab` resource in the official Docker image so WhisperX alignment does

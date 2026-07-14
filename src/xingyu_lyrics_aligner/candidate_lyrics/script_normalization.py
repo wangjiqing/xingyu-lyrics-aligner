@@ -97,9 +97,7 @@ def normalize_transcript_script(
         "opencc_config": opencc_config,
         "changed": converted_text != source_text,
         "duration_seconds": round(time.perf_counter() - started_at, 3),
-        "warnings": [
-            "这是候选歌词的字形规范化副本，不是可信歌词，不会覆盖 ASR 原始产物。"
-        ],
+        "warnings": ["这是候选歌词的字形规范化副本，不是可信歌词，不会覆盖 ASR 原始产物。"],
     }
     report_path.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n",

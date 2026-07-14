@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from argparse import Namespace
 from pathlib import Path
 
 from pytest import MonkeyPatch
 
+from xingyu_lyrics_aligner import audio_separation
 from xingyu_lyrics_aligner.candidate_lyrics import transcription
 
 
@@ -290,16 +290,17 @@ def test_demucs_torchcodec_error_is_actionable(monkeypatch: MonkeyPatch, tmp_pat
     audio = tmp_path / "song.flac"
     audio.write_bytes(b"fake audio")
 
-    monkeypatch.setattr(transcription.shutil, "which", lambda name: "/fake/bin/demucs")
+    class FailedProcess:
+        returncode = 1
 
-    def fail_run(command: list[str], check: bool, stderr: object, text: bool) -> object:
-        raise subprocess.CalledProcessError(
-            returncode=1,
-            cmd=command,
-            stderr="ImportError: TorchCodec is required for save_with_torchcodec.",
-        )
+        def __init__(self, command: list[str], **_: object) -> None:
+            self.command = command
 
-    monkeypatch.setattr(transcription.subprocess, "run", fail_run)
+        def communicate(self) -> tuple[str, str]:
+            return "", "ImportError: TorchCodec is required for save_with_torchcodec."
+
+    monkeypatch.setattr(audio_separation.importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(audio_separation.subprocess, "Popen", FailedProcess)
 
     try:
         transcription.separate_vocals_with_demucs(audio, tmp_path / "out")

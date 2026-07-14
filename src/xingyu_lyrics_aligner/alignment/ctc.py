@@ -5,7 +5,9 @@ This module intentionally does not expose or call WhisperX transcription APIs.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from xingyu_lyrics_aligner.alignment.backmap import CharacterTiming
@@ -52,6 +54,8 @@ class WhisperXCtcAligner:
 
     def load(self) -> None:
         """Load the local cached alignment model, failing clearly if unavailable."""
+        if self._align_model is not None and self._metadata is not None:
+            return
         try:
             import whisperx
         except ImportError as exc:
@@ -60,17 +64,26 @@ class WhisperXCtcAligner:
             ) from exc
 
         try:
+            managed_model = os.environ.get("XINGYU_ALIGNMENT_MODEL_DIR")
+            model_name = self.align_model_name
+            if managed_model:
+                managed_path = Path(managed_model)
+                if not managed_path.is_dir():
+                    raise RuntimeError(
+                        f"Managed alignment model directory is unavailable: {managed_path}"
+                    )
+                model_name = str(managed_path)
             self._align_model, self._metadata = whisperx.load_align_model(
                 language_code=self.language,
                 device=self.device.actual,
-                model_name=self.align_model_name,
+                model_name=model_name,
                 model_cache_only=True,
             )
         except Exception as exc:
             raise RuntimeError(
                 "WhisperX alignment model is not available locally. "
-                "Run `xingyu-align models pull --language zh` to prepare the required "
-                "alignment model before aligning."
+                "Prepare the required model with the Desktop model installer or run "
+                "`xingyu-align models pull --language zh` for the legacy CLI cache."
             ) from exc
 
     def align(self, segment: CtcSegment, audio: object) -> list[CharacterTiming]:

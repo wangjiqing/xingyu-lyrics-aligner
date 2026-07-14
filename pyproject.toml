@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "xingyu-lyrics-aligner"
-version = "0.6.1"
+version = "0.7.0"
 description = "Local-first lyrics forced-alignment toolkit with SWLRC and candidate lyrics support."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -56,6 +56,7 @@ packages = ["src/xingyu_lyrics_aligner"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = [".build-cache", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
