@@ -137,4 +137,4 @@ jobs:
           docker run --rm --network none "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" \
             python -c "import nltk; from nltk.tokenize.punkt import PunktTokenizer; print(nltk.data.find('tokenizers/punkt_tab/english/')); print(PunktTokenizer('english').tokenize('Xingyu aligns lyrics.'))"
           docker run --rm "${DOCKERHUB_IMAGE}:${{ steps.version.outputs.version }}" \
-            python -c "import whisperx, torchcodec, nltk; print('ok')"
+            python -c "import demucs, sphn, whisperx, torchcodec, nltk; print('ok')"

@@ -78,7 +78,7 @@ jobs:
       - name: Smoke test alignment runtime imports
         run: |
           docker run --rm xingyu-lyrics-aligner:ci \
-            python -c "import whisperx, torchcodec, nltk; print('ok')"
+            python -c "import demucs, sphn, whisperx, torchcodec, nltk; print('ok')"
 
       - name: Smoke test worker help
         run: docker run --rm xingyu-lyrics-aligner:ci xingyu-align worker run --help
